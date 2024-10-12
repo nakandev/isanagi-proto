@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "isana"
+version = "0.1.0"
+description = "*PU Design Tool"
+authors = ["nakandev <nakandev.s@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "isana" },
+    { include = "kodama" },
+    { include = "penguin" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.scripts]
+isana-callgraph = "isana.tool.callgraph:main"
+isana-cfg = "isana.tool.cfg:main"
+isana-dfg = "isana.tool.dfg:main"
+isana-disassembler = "isana.tool.disassembler:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
