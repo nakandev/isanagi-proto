@@ -4,7 +4,6 @@ import sys
 
 class Operator():
     def __init__(self):
-        self.binary = int()
         self.ins = None
         self.block = None
         self.data_srcs = list()
@@ -21,6 +20,18 @@ class Operator():
     def addr(self):
         return self.ins.addr
 
+    @property
+    def binary(self):
+        if self.ins:
+            return self.ins.value
+        return 0
+
+    @property
+    def size(self):
+        if self.ins:
+            return self.ins.bytesize
+        raise NotImplementedError()
+
     def to_json(self):
         d = {
             'id': id(self),
@@ -36,12 +47,6 @@ class Operator():
             'data_dsts': id(self.data_dsts),
         }
         return d
-
-    @property
-    def size(self):
-        if self.ins:
-            return self.ins.bytesize
-        raise NotImplementedError()
 
     def regs_used_in(self, op):
         for reg0 in self.ins.params.outputs.regs:
@@ -329,11 +334,10 @@ class DisassemblyObject():
         for sh in self._text_section_headers():
             fidx = sh.sh_offset
             while fidx < sh.sh_offset + sh.sh_size:
-                value = int.from_bytes(self.elf.f[fidx: fidx + 4], "little")
+                data = self.elf.f[fidx: fidx + 4]
                 addr = sh.sh_addr + fidx - sh.sh_offset
-                ins = self.isa.decode(value, addr=addr)
+                ins = self.isa.decode(data, addr=addr)
                 op = Operator()
-                op.binary = value & (2 ** ins.bitsize - 1)
                 op.ins = ins
                 operators.append(op)
                 fidx_old = fidx

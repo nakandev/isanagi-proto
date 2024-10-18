@@ -83,6 +83,7 @@ class Bits():
 class ISA():
     def __init__(self, **kwargs):
         self.name = kwargs.pop('name')
+        self.endian = kwargs.pop('endian', "little")
         self.registers = kwargs.pop('registers')
         self.memories = kwargs.pop('memories')
         self.immediates = kwargs.pop('immediates')
@@ -146,20 +147,24 @@ class ISA():
             s = "{}:{}".format(param.label, param.type_)
         return s
 
-    def decode(self, value: int, addr: int | None = None):
-        return self._decode0(value, addr=addr)
+    def decode(self, data: bytes, addr: int | None = None):
+        return self._decode0(data, addr=addr)
 
-    def _decode0(self, value: int, addr: int | None = None):
+    def _decode0(self, data: bytes, addr: int | None = None):
         # simple opecode match
         instr = None
         for instr0 in self.instructions:
             instr0 = instr0()
-            if instr0.match_opecode(value):
+            value0 = instr0.value_swap_endian(data, self.endian)
+            instr0.isa = self
+            if instr0.match_opecode(value0):
                 instr = instr0
+                value = value0
                 break
         else:
             instr = unknown_op()
-        instr.isa = self
+            value = int.from_bytes(data, byteorder=self.endian)
+            instr.isa = self
         instr.decode(value, addr=addr)
         return instr
 
@@ -175,7 +180,8 @@ class ISA():
         if addr is None:
             addr = self._ctx.PC.pc
         value = self._ctx.Mem.read(32, addr)
-        ins = self.decode(value, addr=addr)
+        data = value.to_bytes(4, self.endian)
+        ins = self.decode(data, addr=addr)
         self._ctx.pre_semantic()
         ins.semantic(self._ctx, ins)
         self._ctx.post_semantic(ins)
@@ -343,6 +349,7 @@ class Instruction():
         self._operands = dict()
         self._pseudo_instrs = list()
         self._disasm_str = str()
+        self._value = int()
 
     def __repr__(self):
         s = "Instruction({})"
@@ -381,6 +388,10 @@ class Instruction():
         pass
 
     @property
+    def value(self):
+        return self._value
+
+    @property
     def bitsize(self):
         if self.bin is None:
             return 0
@@ -388,7 +399,7 @@ class Instruction():
 
     @property
     def bytesize(self):
-        return self.bitsize // 8
+        return (self.bitsize + 7) // 8
 
     @property
     def opecode(self):
@@ -424,6 +435,15 @@ class Instruction():
         # TODO: generate from semantic
         raise NotImplementedError()
 
+    def value_swap_endian(self, value: bytes, endian: str):
+        if not self.bin:
+            return None
+        value_ = value[:self.bytesize]
+        if endian == "big":
+            value_ = reversed(value_)
+        new_value = int.from_bytes(value_, byteorder=endian)
+        return new_value
+
     def match_opecode(self, value: int):
         bitvalue = 0
         for bits in reversed(self.bin.bitss):
@@ -435,10 +455,9 @@ class Instruction():
         return False
 
     def decode(self, value: int, addr: int | None = None):
-        if not self.isa:
-            return None
         if not self.bin:
             return None
+        self._value = value
         self.addr = addr if addr is not None else 0
         self.params = InstructionParameters(isa=self.isa)
         for bits in reversed(self.bin.bitss):

@@ -2,7 +2,7 @@ from isana.model.riscv.python.isa import isa  # noqa
 
 
 def test_decode():
-    values = (
+    values32 = (
         0b10000000000000000001_10001_0110111,  # lui
         0b10000000000000000001_10001_0010111,  # auipc
         0b00000000000000000000_00000_1101111,  # jal
@@ -70,11 +70,14 @@ def test_decode():
         0b10100_0_0_00000_00000_010_00000_0101111,  # amomax.w
         0b11000_0_0_00000_00000_010_00000_0101111,  # amominu.w
         0b11100_0_0_00000_00000_010_00000_0101111,  # amomaxu.w
-
+    )
+    values16 = (
         0b000_00000000_000_00,  # illegal
         0b000_00000001_000_00,  # c.addi4spn
         0b101_11111110110_01,  # c.j
     )
+    values = [v.to_bytes(4, "little") for v in values32]
+    values += [v.to_bytes(2, "little") for v in values16]
 
     for value in values:
         instr = isa.decode(value)
