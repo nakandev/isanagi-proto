@@ -42,7 +42,7 @@ class ProgramHeader(object):
     PT = ('NULL', 'LOAD', 'DYNAMIC', 'INTERP', 'NOTE', 'SHLIB', 'PHDR', 'TLS',
           'LOOS', 'HIOS', 'LOPROC', 'HIPROC', )
     PF = ('X', 'W', 'R', 'MASKOS', 'MASKPROC')
-    p_key = (
+    p_key_32 = (
         'p_type',
         'p_offset',
         'p_vaddr',
@@ -50,6 +50,16 @@ class ProgramHeader(object):
         'p_filesz',
         'p_memsz',
         'p_flags',
+        'p_align',
+    )
+    p_key_64 = (
+        'p_type',
+        'p_flags',
+        'p_offset',
+        'p_vaddr',
+        'p_paddr',
+        'p_filesz',
+        'p_memsz',
         'p_align',
     )
 
@@ -183,19 +193,21 @@ class ElfObject():
         for ph_idx in range(elf_header.e_phnum):
             binary = self.f[f_idx:f_idx + elf_header.e_phentsize]
             f_idx += elf_header.e_phentsize
+            ph = ProgramHeader()
             if elf_header.ei_class == elf_header.CLASS_32:
                 if elf_header.ei_data == elf_header.DATA_2MSB:
                     ph_values = struct.unpack('>LLLLLLLL', binary)
                 else:
                     ph_values = struct.unpack('<LLLLLLLL', binary)
+                for i, k in enumerate(ph.p_key_32):
+                    setattr(ph, k, ph_values[i])
             elif elf_header.ei_class == elf_header.CLASS_64:
                 if elf_header.ei_data == elf_header.DATA_2MSB:
-                    ph_values = struct.unpack('>QQQQQQQQ', binary)
+                    ph_values = struct.unpack('>LLQQQQQQ', binary)
                 else:
-                    ph_values = struct.unpack('<QQQQQQQQ', binary)
-            ph = ProgramHeader()
-            for i, k in enumerate(ph.p_key):
-                setattr(ph, k, ph_values[i])
+                    ph_values = struct.unpack('<LLQQQQQQ', binary)
+                for i, k in enumerate(ph.p_key_64):
+                    setattr(ph, k, ph_values[i])
             phs.append(ph)
         self.program_headers = phs
         return self.program_headers

@@ -162,6 +162,7 @@ cython_debug/
 #.idea/
 
 # temporary files
+test/**/out/
+test/kodama/**/*.elf
 test/kodama/**/*.elf.*
 test/kodama/elf/
-test/kodama/out/
