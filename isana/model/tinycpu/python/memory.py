@@ -1,3 +1,3 @@
 from isana.isa import Memory
 
-Mem = Memory("MEM", width=32)
+Mem = Memory("Mem", width=32)

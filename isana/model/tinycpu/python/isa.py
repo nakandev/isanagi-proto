@@ -2,7 +2,7 @@ from isana.isa import ISA
 from isana.isa import Context
 
 from .memory import Mem
-from .register import GPR, PC
+from .register import GPR, PCR
 from .datatype import Imm
 from .instruction import instructions
 
@@ -27,11 +27,29 @@ class TinyCpuISA(ISA):
         super().__init__(**kwargs)
 
 
-isa = TinyCpuISA(
+isa_le = TinyCpuISA(
     name="tinycpu",
+    endian="little",
     registers=(
         GPR,
-        PC,
+        PCR,
+    ),
+    memories=(
+        Mem,
+    ),
+    immediates=(
+        Imm,
+    ),
+    instructions=instructions,
+    context=TinyCpuContext,
+)
+
+isa_be = TinyCpuISA(
+    name="tinycpu",
+    endian="big",
+    registers=(
+        GPR,
+        PCR,
     ),
     memories=(
         Mem,
