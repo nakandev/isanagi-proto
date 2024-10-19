@@ -106,7 +106,15 @@ def collect_calls(dis):
     for func in dis.functions:
         calls.setdefault(func, dict())
         calls[func].setdefault('func', func)
-        calls[func]['calls'] = [f for f, g in func.walk_functions_by_depth() if g and f != func]
+        # calls[func]['calls'] = [f for f, g in func.walk_functions_by_depth() if g and f != func]
+        calls[func]['called'] = list(set(func.call_srcs[:]))
+        calls[func].setdefault('calltree', list())
+        for f, gofoward in func.walk_functions_by_depth():
+            if gofoward and f != func:
+                calls[func]['calltree'].append(f)
+                # calls[f].setdefault('func', f)
+                # calls[f].setdefault('called', list())
+                # calls[f]['called'].append(func)
     return calls
 
 
@@ -130,7 +138,8 @@ def write_callgraph_info(info, file):
         stack_size = info[func]['stack_size']
         calls = info[func]['calls']
         print("{}:".format(func.label), file=file)
-        print("  calls : {}".format([f.label for f in calls['calls']]), file=file)
+        print("  call tree : {}".format([f.label for f in calls['calltree']]), file=file)
+        print("  called from : {}".format([f.label for f in calls['called']]), file=file)
         print("  stack (self)     : {}".format(stack_size['self']), file=file)
         print("  stack (children) : {}".format(stack_size['children']), file=file)
         print("  callee-regs (self)     : {}".format(
