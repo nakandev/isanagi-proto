@@ -1,4 +1,5 @@
 from .elf import SectionHeader, SymbolTable
+import re
 import sys
 
 
@@ -67,6 +68,10 @@ class Operator():
         return False
 
 
+def escape_label(label):
+    return re.sub(r"\W", "_", label)
+
+
 class BasicBlock():
     def __init__(self):
         self.symbols = list()
@@ -85,6 +90,10 @@ class BasicBlock():
     @property
     def label(self):
         return self.labels[0]
+
+    @property
+    def label_escape(self):
+        return escape_label(self.label)
 
     @property
     def labels(self):
@@ -151,6 +160,10 @@ class Function():
     @property
     def label(self):
         return self.labels[0]
+
+    @property
+    def label_escape(self):
+        return escape_label(self.label)
 
     @property
     def labels(self):

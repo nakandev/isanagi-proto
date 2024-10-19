@@ -67,7 +67,7 @@ def main():
     for func in funcs:
         print("[func]", func.label)
         graph = build_dfg(func)
-        fname = os.path.join(dirname, "{}.html".format(func.label))
+        fname = os.path.join(dirname, "{}.html".format(func.label_escape))
         with open(fname, "w") as f:
             s = graph.to_svg(html=True, title="DFG")
             f.write(s)
