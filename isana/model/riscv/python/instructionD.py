@@ -3,7 +3,7 @@
 
 from .defs import xlen
 # from .memory import Mem
-# from .register import GPR, GPRC, CSR, PC
+# from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrR, InstrR2, InstrR4, InstrRFloat, InstrR2Float,
     InstrI,

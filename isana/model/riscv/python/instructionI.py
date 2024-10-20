@@ -3,7 +3,7 @@ from isana.isa import signed, unsigned
 
 from .defs import xlen
 # from .memory import Mem
-# from .register import GPR, GPRC, CSR, PC
+# from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrR,
     InstrI, InstrIShift, InstrIShift64, InstrILoad,
@@ -26,15 +26,15 @@ class auipc(InstrU):
     opn, opc = "auipc", 0b00000000000000000000_00000_0010111
 
     def semantic(self, ctx, ins):
-        ctx.GPR[ins.rd] = ctx.PC.pc + ins.imm
+        ctx.GPR[ins.rd] = ctx.PCR.pc + ins.imm
 
 
 class jal(InstrJ):
     opn, opc = "jal", 0b00000000000000000000_00000_1101111
 
     def semantic(self, ctx, ins):
-        ctx.GPR[ins.rd] = ctx.PC.pc + 4
-        ctx.PC.pc += ins.imm
+        ctx.GPR[ins.rd] = ctx.PCR.pc + 4
+        ctx.PCR.pc += ins.imm
 
     @property
     def is_call(self):
@@ -54,8 +54,8 @@ class jalr(InstrI):
 
     def semantic(self, ctx, ins):
         t = ctx.GPR[ins.rs1]
-        ctx.GPR[ins.rd] = ctx.PC.pc + 4
-        ctx.PC.pc = t + ins.imm
+        ctx.GPR[ins.rd] = ctx.PCR.pc + 4
+        ctx.PCR.pc = t + ins.imm
 
     @property
     def is_call(self):
@@ -83,7 +83,7 @@ class beq(InstrB):
     def semantic(self, ctx, ins):
         cond = ctx.GPR[ins.rs1] == ctx.GPR[ins.rs2]
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -96,7 +96,7 @@ class bne(InstrB):
     def semantic(self, ctx, ins):
         cond = ctx.GPR[ins.rs1] != ctx.GPR[ins.rs2]
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -109,7 +109,7 @@ class blt(InstrB):
     def semantic(self, ctx, ins):
         cond = ctx.GPR[ins.rs1] < ctx.GPR[ins.rs2]
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -122,7 +122,7 @@ class bge(InstrB):
     def semantic(self, ctx, ins):
         cond = ctx.GPR[ins.rs1] >= ctx.GPR[ins.rs2]
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -135,7 +135,7 @@ class bltu(InstrB):
     def semantic(self, ctx, ins):
         cond = unsigned(xlen, ctx.GPR[ins.rs1]) < unsigned(xlen, ctx.GPR[ins.rs2])
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -148,7 +148,7 @@ class bgeu(InstrB):
     def semantic(self, ctx, ins):
         cond = unsigned(xlen, ctx.GPR[ins.rs1]) >= unsigned(xlen, ctx.GPR[ins.rs2])
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value

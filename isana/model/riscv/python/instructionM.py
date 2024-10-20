@@ -3,7 +3,7 @@ from isana.isa import signed, unsigned
 
 from .defs import xlen
 # from .memory import Mem
-# from .register import GPR, GPRC, CSR, PC
+# from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrR,
 )

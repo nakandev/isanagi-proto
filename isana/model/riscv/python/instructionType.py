@@ -4,7 +4,7 @@ from isana.isa import parameter, assembly, binary
 # from isana.isa import unimpl
 
 # from .memory import Mem
-# from .register import GPR, GPRC, VPR, CSR, PC
+# from .register import GPR, GPRC, VPR, CSR, PCR
 
 
 # Type for Base Instruction Set

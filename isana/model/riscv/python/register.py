@@ -3,7 +3,7 @@ from isana.isa import RegisterGroup, Register
 from .defs import xlen
 
 
-PC = RegisterGroup("PC", width=xlen, regs=(
+PCR = RegisterGroup("PCR", width=xlen, regs=(
     Register(0, "pc"),
     Register(1, "prev_pc"),
 ))

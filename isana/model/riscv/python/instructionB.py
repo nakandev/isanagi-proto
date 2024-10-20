@@ -2,7 +2,7 @@ from isana.isa import binary
 # from isana.isa import signed
 
 # from .memory import Mem
-# from .register import GPR, GPRC, CSR, PC
+# from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrR, InstrR2,
     InstrI, InstrIShift,

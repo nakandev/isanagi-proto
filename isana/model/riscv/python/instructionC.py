@@ -3,7 +3,7 @@ from isana.isa import parameter, assembly, binary
 
 from .defs import xlen
 # from .memory import Mem
-# from .register import GPR, GPRC, CSR, PC
+# from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrCR, InstrCI, InstrCSS, InstrCIW, InstrCL, InstrCS, InstrCA, InstrCB, InstrCJ,
     InstrCLB, InstrCSB, InstrCLH, InstrCSH, InstrCU, InstrCMMV, InstrCMJT, InstrCMPP,
