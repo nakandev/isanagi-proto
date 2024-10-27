@@ -88,10 +88,19 @@ class ISA():
         self.memories = kwargs.pop('memories')
         self.immediates = kwargs.pop('immediates')
         self.instructions = kwargs.pop('instructions')
+
+        self._compiler = kwargs.pop('compiler', None)
+        if (type(self._compiler) == type(object)):
+            self._compiler = self._compiler(self)
+
         self.context = kwargs.pop('context')
         self._ctx = None
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    @property
+    def compiler(self):
+        return self._compiler
 
     def is_opc_type(self, tp: str):
         return tp == "Opc"
