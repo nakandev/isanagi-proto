@@ -1,102 +1,58 @@
 import os
+from jinja2 import Template
 
-# RegisterInfo.td
-template_registerinfo_td = '''
-//=== Registers
-{reg_cls}
 
-{reg_defs}
+class Relocation():
+    def __init__(self):
+        pass
 
-//=== Register Classes
-{regcls_defs}
-'''.strip('\n')
 
-template_register_cls = '''
-class CustomXPUReg<bits<16> Enc, string n, list<string> alt = []>: Register<n> {{
-    let HWEncoding = Enc;
-    let AltNames = alt;
-    let Namespace = "{namespace}";
-}}
-'''.strip('\n')
+class KwargsClass():
+    keys = ()
 
-template_register_def = '''
-def {varname} : CustomXPUReg<{no}, "{name}", {aliases}>, DwarfRegNum<[{dwarfno}]>;
-'''.strip('\n')
-template_register_class_def = '''
-def {rcname} : RegisterClass<"{namespace}", [i32], 32, (add
-  {varnames}
-)>;
-'''.strip('\n')
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-# InstrInfo.td
-template_instrinfo_td = '''
-//=== Operands
-{operand_cls}
 
-//=== OperandTypes
-{operand_types}
+class RegisterDef(KwargsClass):
+    keys = (
+        'varname',
+        'no',
+        'name',
+        'aliases',
+        'dwarfno',
+    )
 
-//=== Instruction Classes
-{instr_cls}
+class RegisterClassDef(KwargsClass):
+    keys = (
+        'varname',
+        'reg_varnames',
+    )
 
-//=== Instruction Defs
-{instr_defs}
+class OperandCls(KwargsClass):
+    keys = (
+        'varname',
+        'basecls',
+    )
 
-//=== Pseudo Instruction Defs
-{instr_pseudo_call}
-'''.strip('\n')
+class OperandType(KwargsClass):
+    keys = (
+        'varname',
+        'basecls',
+    )
 
-template_operand_cls = '''
-def {varname}: Operand<{basecls}>;
-'''.strip('\n')
-
-template_operand_types = '''
-def {varname} : IntImmLeaf<{basecls}, [{{return Imm == (Imm & 0xff);}}]>;
-'''.strip('\n')
-
-template_instruction_cls = '''
-class CustomXPUInst<dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction {{
-  let Namespace = "{namespace}";
-  field bits<32> Inst;
-  let Size = 4;
-  let OutOperandList = outs;
-  let InOperandList  = ins;
-  let AsmString   = asmstr;
-  let Pattern     = pattern;
-  let DecoderNamespace = "{namespace}";
-  field bits<32> SoftFail = 0;
-}}
-'''.strip('\n')
-
-template_instr_def = '''
-def {varname}: CustomXPUInst<
-  {outs}, {ins},
-  {asmstr},
-  {pattern}>
-{{
-{bits}
-{instr_bits}
-{attrs}
-}}
-'''.strip('\n')
-
-template_instr_pseudo_call = '''
-def customxpu_ret_glue : SDNode<
-  "CustomXPUISD::RET_GLUE", SDTNone,
-  [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-
-def PseudoRET: CustomXPUInst<
-  (outs), (ins),
-  "",
-  [(customxpu_ret_glue)]>
-{
-  let isPseudo = 1;
-  let isCodeGenOnly = 1;
-  let isBarrier = 1;
-  let isReturn = 1;
-  let isTerminator = 1;
-}
-'''.strip('\n')
+class InstrDefs(KwargsClass):
+    keys = (
+        'varname',
+        'outs',
+        'ins',
+        'asmstr',
+        'pattern',
+        'bit_defs',
+        'bit_insts',
+        'attrs',
+    )
 
 
 instr_attr_table = {
@@ -121,11 +77,6 @@ instr_attr_table = {
 }
 
 
-class Relocation():
-    def __init__(self):
-        pass
-
-
 class LLVMCompiler():
     namespace = "XXPU"
 
@@ -133,36 +84,41 @@ class LLVMCompiler():
         self.isa = isa
         self.outdir = "out"
 
+    @property
+    def template_dir(self):
+        return os.path.join(os.path.dirname(__file__),
+                            "template", "llvm/llvm/lib/Target/Xpu")
+
     def gen_registerinfo_td(self):
         isa = self.isa
-        reg_cls = template_register_cls.format(
-            namespace=self.namespace,
-        )
 
         reg_defs = []
         for reggroup in isa.registers:
             for reg in reggroup:
-                reg_defs += [template_register_def.format(
+                reg_defs.append(RegisterDef(
                     namespace=self.namespace,
                     varname=reg.label.upper(),
                     no=reg.number,
                     name=reg.label,
                     aliases="[{}]".format(",".join('"{}"'.format(n) for n in reg.aliases)),
                     dwarfno=reg.dwarf_number,
-                )]
+                ))
 
         regcls_defs = []
         for reggroup in isa.registers:
-            regcls_defs += [template_register_class_def.format(
-                namespace=self.namespace,
-                rcname=reggroup.label,
-                varnames=','.join([reg.label.upper() for reg in reggroup]),
-            )]
+            regcls_defs.append(RegisterClassDef(
+                varname=reggroup.label,
+                reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
+            ))
 
-        final_text = template_registerinfo_td.format(
-            reg_cls=reg_cls,
-            reg_defs='\n'.join(reg_defs),
-            regcls_defs='\n'.join(regcls_defs),
+        template_fname = "XpuRegisterInfo.td"
+        template_fpath = os.path.join(self.template_dir, template_fname)
+        with open(template_fpath) as f:
+            template_str = f.read()
+        final_text = Template(source=template_str).render(
+            namespace=self.namespace,
+            reg_defs=reg_defs,
+            regcls_defs=regcls_defs,
         )
 
         fname = f"{self.namespace}RegisterInfo.td"
@@ -173,41 +129,52 @@ class LLVMCompiler():
 
     def gen_instrinfo_td(self):
         isa = self.isa
-        operand_cls = []
-        for imm in isa.immediates:
-            s = template_operand_cls.format(
-                varname=imm.label,
-                basecls="i32",
-            )
-            operand_cls.append(s)
-        for mem in isa.memories:
-            s = template_operand_cls.format(
-                varname=mem.label,
-                basecls="i32",
-            )
-            operand_cls.append(s)
-
+        operand_clss = []
         operand_types = []
         for imm in isa.immediates:
-            s = template_operand_types.format(
+            operand_clss.append(OperandCls(
+                varname=imm.label,
+                basecls="i32",
+            ))
+            operand_types.append(OperandType(
                 varname=imm.label + "Tp",
                 basecls="i32",
-            )
-            operand_types.append(s)
+            ))
         for mem in isa.memories:
-            s = template_operand_types.format(
+            operand_clss.append(OperandCls(
+                varname=mem.label,
+                basecls="i32",
+            ))
+            operand_types.append(OperandType(
                 varname=mem.label + "Tp",
                 basecls="i32",
-            )
-            operand_types.append(s)
-
-        instr_cls = template_instruction_cls.format(
-            namespace=self.namespace,
-        )
+            ))
 
         instr_defs = []
         for cls in isa.instructions:
             instr = cls()
+            instr_def = InstrDefs()
+
+            instr_def.varname = instr.__class__.__name__.upper()
+            instr_def.outs = ', '.join([
+                '{}:${}'.format(cls, label) for label, cls in instr.prm.outputs.items()
+            ])
+            instr_def.ins = ', '.join([
+                '{}:${}'.format(cls, label) for label, cls in instr.prm.inputs.items()
+            ])
+
+            asmstrs = []
+            for ast in instr.asm.ast:
+                if ast == '$opn':
+                    asmstrs += [instr.opn]
+                elif ast[0] == "$":
+                    asmstrs += ["${{{}}}".format(ast[1:])]
+                else:
+                    asmstrs += [ast]
+            instr_def.asmstr = '"{}"'.format(''.join(asmstrs))
+
+            instr_def.pattern = "[]"
+
             bit_defs = []
             bit_instrs = []
             bit_sum = 0
@@ -230,15 +197,9 @@ class LLVMCompiler():
                         bits.label[1:],
                     ))
                 bit_sum += bits.msb - bits.lsb + 1
+            instr_def.bit_defs = "\n".join(bit_defs)
+            instr_def.bit_insts = "\n".join(bit_instrs)
 
-            asmstrs = []
-            for ast in instr.asm.ast:
-                if ast == '$opn':
-                    asmstrs += [instr.opn]
-                elif ast[0] == "$":
-                    asmstrs += ["${{{}}}".format(ast[1:])]
-                else:
-                    asmstrs += [ast]
             attrs = []
             for k, v in instr_attr_table.items():
                 if not hasattr(instr, k):
@@ -249,35 +210,23 @@ class LLVMCompiler():
                     attrs += v
             attrs = list(set(attrs))
             attrs = [f"  let {x} = true;"for x in attrs]
-            instr_def = template_instr_def.format(
-                varname=instr.__class__.__name__.upper(),
-                outs="(outs {})".format(', '.join([
-                    '{}:${}'.format(cls, label) for label, cls in instr.prm.outputs.items()
-                ])),
-                ins="(ins {})".format(', '.join([
-                    '{}:${}'.format(cls, label) for label, cls in instr.prm.inputs.items()
-                ])),
-                # asmstr='"{}"'.format(''.join(instr.asm.ast).replace("$opn", instr.opn)),
-                asmstr='"{}"'.format(''.join(asmstrs)),
-                pattern="[]",
-                bits="\n".join(bit_defs),
-                instr_bits="\n".join(bit_instrs),
-                attrs="\n".join(attrs),
-            )
-            instr_defs += [instr_def]
+            instr_def.attrs = "\n".join(attrs)
 
-        instr_pseudo_call = template_instr_pseudo_call
+            instr_defs.append(instr_def)
 
-        final_text = template_instrinfo_td.format(
-            operand_cls="\n".join(operand_cls),
-            operand_types="\n".join(operand_types),
-            instr_cls=instr_cls,
-            instr_defs="\n".join(instr_defs),
-            instr_pseudo_call=instr_pseudo_call,
+        template_fname = "XpuInstrInfo.td"
+        template_fpath = os.path.join(self.template_dir, template_fname)
+        with open(template_fpath) as f:
+            template_str = f.read()
+        final_text = Template(source=template_str).render(
+            namespace=self.namespace,
+            operand_clss=operand_clss,
+            operand_types=operand_types,
+            instr_defs=instr_defs,
         )
 
-        fname = f"{self.namespace}InstrInfo.td"
-        fpath = os.path.join(self.outdir, fname)
+        out_fname = f"{self.namespace}InstrInfo.td"
+        out_fpath = os.path.join(self.outdir, out_fname)
         os.makedirs(self.outdir, exist_ok=True)
-        with open(fpath, "w") as f:
+        with open(out_fpath, "w") as f:
             f.write(final_text)
