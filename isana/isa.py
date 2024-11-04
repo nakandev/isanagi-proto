@@ -440,6 +440,7 @@ class Instruction():
             return None
         value_ = value[:self.bytesize]
         if endian == "big":
+            # swap to little endian
             value_ = reversed(value_)
         new_value = int.from_bytes(value_, byteorder=endian)
         return new_value
