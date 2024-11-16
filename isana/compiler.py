@@ -1,10 +1,15 @@
 import os
+import re
 from jinja2 import Template
+from isana.semantic import (
+    may_change_pc_absolute,
+    may_change_pc_relative,
+    may_take_memory_address,
+)
 
 
-class Relocation():
-    def __init__(self):
-        pass
+_default_namespace = "Xpu"
+_default_triple = ("xpu", "", "")
 
 
 class KwargsClass():
@@ -49,6 +54,7 @@ class InstrDefs(KwargsClass):
         'ins',
         'asmstr',
         'pattern',
+        'params',
         'bit_defs',
         'bit_insts',
         'attrs',
@@ -77,17 +83,184 @@ instr_attr_table = {
 }
 
 
+class Fixup(KwargsClass):
+    keys = (
+        'namespace',
+        'number',
+        'name_enum',
+        'addend',
+        'bin',
+        'offset',
+        'size',
+        'flags',
+        'reloc_procs',
+    )
+
+    def __init__(self, **kwargs):
+        self.namespace = kwargs.pop('namespace', _default_namespace)
+        self.number = kwargs.pop('number', -1)
+        self.name = kwargs.pop('name', str())
+        self.addend = kwargs.pop('addend', None)
+        self.bin = kwargs.pop('bin', None)
+        self.name_enum = f"fixup_{self.namespace.lower()}_{self.name}"
+        self.reloc_procs = list()
+        super().__init__(**kwargs)
+
+
+def auto_make_fixups(isa):
+    fixups = list()
+    fixups += auto_make_relocations(isa)
+    return fixups
+
+
+def auto_make_relocations(isa):
+    relocs = {
+        "pc_abs": list(),
+        "pc_rel": list(),
+        "mem_addr": list(),
+        "other_imm": list(),
+    }
+    instrs = dict()
+    for cls in isa.instructions:
+        if not hasattr(cls, 'semantic'):
+            continue
+        instr = cls()
+        bin_filtered = re.sub(r"\$(?!opc|imm)\w+", r"$_", str(instr.bin))
+        relocinfo = (instr.bitsize, bin_filtered)
+        if may_change_pc_absolute(instr.semantic):
+            key = "pc_abs"
+            relocs[key].append(relocinfo)
+            instrs.setdefault((key, bin_filtered), list())
+            instrs[(key, bin_filtered)].append(cls)
+        elif may_change_pc_relative(instr.semantic):
+            key = "pc_rel"
+            relocs[key].append(relocinfo)
+            instrs.setdefault((key, bin_filtered), list())
+            instrs[(key, bin_filtered)].append(cls)
+        elif may_take_memory_address(instr.semantic):
+            key = "mem_addr"
+            relocs[key].append(relocinfo)
+            instrs.setdefault((key, bin_filtered), list())
+            instrs[(key, bin_filtered)].append(cls)
+        elif "imm" in instr.prm.inputs.keys():  # TODO fix condition
+            key = "other_imm"
+            relocs[key].append(relocinfo)
+            instrs.setdefault((key, bin_filtered), list())
+            instrs[(key, bin_filtered)].append(cls)
+        else:
+            pass
+    fixups = list()
+    fixups += [
+        Fixup(name="32", offset=0, size=32, flags=0, bin=32),
+        Fixup(name="64", offset=0, size=64, flags=0, bin=64),
+    ]
+    for key in relocs:
+        relocs[key] = sorted(list(set(relocs[key])), key=lambda x: str(x[1]))
+        for ri, info in enumerate(relocs[key]):
+            bitsize, bin_ = info
+            fixup = Fixup()
+            fixup.name = f"{key}_{ri}"
+            fixup.offset = 0
+            fixup.size = bitsize  # TODO: fix it
+            if key == "pc_rel":
+                fixup.flags = "MCFixupKindInfo::FKF_IsPCRel"
+            else:
+                fixup.flags = "0"  # TODO: fix it
+            fixup.bin = bin_
+            fixup.instrs = [i() for i in sorted(list(set(instrs[(key, bin_)])), key=lambda x: x.opn)]
+            fixups.append(fixup)
+    instr_reloc_table = dict()
+
+    for fixup in fixups:
+        procs = list()
+        if fixup.bin is None:
+            pass
+        if isinstance(fixup.bin, int):
+            procs.append("  | val")
+        else:
+            bit_sum = 0
+            for bits in reversed(fixup.instrs[0].bin.bitss):
+                if bits.label == "$imm":
+                    procs.append("  | (((val >> {}) & {}) << {})".format(
+                        bits.lsb,
+                        2 ** bits.size() - 1,
+                        bit_sum,
+                    ))
+                bit_sum += bits.size()
+        fixup.reloc_procs = procs
+        if fixup in instr_reloc_table.keys():
+            fixup.instrs = instr_reloc_table[fixup]
+    return fixups
+
+
 class LLVMCompiler():
-    namespace = "XXPU"
+    namespace = _default_namespace
+    triple = tuple(_default_triple)
+    fixups = tuple()
 
     def __init__(self, isa):
         self.isa = isa
         self.outdir = "out"
+        self._init_fixups()
 
     @property
     def template_dir(self):
-        return os.path.join(os.path.dirname(__file__),
-                            "template", "llvm/llvm/lib/Target/Xpu")
+        return os.path.join(os.path.dirname(__file__), "template", "llvm")
+
+    def _init_fixups(self):
+        isa = self.isa
+        if len(self.fixups) > 0:
+            fixups = self.fixups[:]
+        else:
+            fixups = auto_make_fixups(isa)
+        for fixup in fixups:
+            fixup.namespace = self.namespace
+            fixup.name_enum = f"fixup_{fixup.namespace.lower()}_{fixup.name}"
+        self._fixups = fixups
+
+    def _read_template_and_write(self, fdirs, fname, tmp_kwargs):
+        fprefix, fname = fname
+        template_fdir = os.path.join(self.template_dir, *fdirs)
+        template_fname = f"{fprefix}{fname}"
+        template_fpath = os.path.join(template_fdir, template_fname)
+        with open(template_fpath) as f:
+            template_str = f.read()
+        final_text = Template(source=template_str).render(
+            **tmp_kwargs,
+        )
+
+        out_fdirs = [d.replace(f"{_default_namespace}", f"{self.namespace}") for d in fdirs]
+        out_fdir = os.path.join(self.outdir, *out_fdirs)
+        out_fname = "{}{}".format(
+            f"{fprefix}".replace(f"{_default_namespace}", f"{self.namespace}"),
+            f"{fname}")
+        out_fpath = os.path.join(out_fdir, out_fname)
+        os.makedirs(out_fdir, exist_ok=True)
+        with open(out_fpath, "w") as f:
+            f.write(final_text)
+
+    def gen_lld_elf_arch_xpu_cpp(self):
+        fixups = self._fixups
+        fixup_relocs = fixups[:]
+
+        fdirs = "lld/ELF/Arch".split("/")
+        fname = "Xpu", ".cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixup_relocs": fixup_relocs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_elfrelocs_xpu_def(self):
+        fixups = self._fixups
+
+        fdirs = "llvm/include/llvm/BinaryFormat/ELFRelocs".split("/")
+        fname = "Xpu", ".def"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixups": fixups,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_registerinfo_td(self):
         isa = self.isa
@@ -111,21 +284,14 @@ class LLVMCompiler():
                 reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
             ))
 
-        template_fname = "XpuRegisterInfo.td"
-        template_fpath = os.path.join(self.template_dir, template_fname)
-        with open(template_fpath) as f:
-            template_str = f.read()
-        final_text = Template(source=template_str).render(
-            namespace=self.namespace,
-            reg_defs=reg_defs,
-            regcls_defs=regcls_defs,
-        )
-
-        fname = f"{self.namespace}RegisterInfo.td"
-        fpath = os.path.join(self.outdir, fname)
-        os.makedirs(self.outdir, exist_ok=True)
-        with open(fpath, "w") as f:
-            f.write(final_text)
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "RegisterInfo.td"
+        kwargs = {
+            "namespace": self.namespace,
+            "reg_defs": reg_defs,
+            "regcls_defs": regcls_defs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instrinfo_td(self):
         isa = self.isa
@@ -156,12 +322,22 @@ class LLVMCompiler():
             instr_def = InstrDefs()
 
             instr_def.varname = instr.__class__.__name__.upper()
-            instr_def.outs = ', '.join([
-                '{}:${}'.format(cls, label) for label, cls in instr.prm.outputs.items()
-            ])
             instr_def.ins = ', '.join([
                 '{}:${}'.format(cls, label) for label, cls in instr.prm.inputs.items()
             ])
+
+            # instr_def.outs = ', '.join([
+            #     '{}:${}'.format(cls, label) for label, cls in instr.prm.outputs.items()
+            # ])
+            instr_def.outs = []
+            duplicated_outs = {}
+            for label, cls in instr.prm.outputs.items():
+                if label in instr.prm.inputs.keys():
+                    new_label = label + "_o"
+                    duplicated_outs[label] = new_label
+                    label = new_label
+                instr_def.outs.append('{}:${}'.format(cls, label))
+            instr_def.outs = ", ".join(instr_def.outs)
 
             asmstrs = []
             for ast in instr.asm.ast:
@@ -174,6 +350,22 @@ class LLVMCompiler():
             instr_def.asmstr = '"{}"'.format(''.join(asmstrs))
 
             instr_def.pattern = "[]"
+
+            params = []
+            # params.append("  let DecoderNamespace = \"{}\";".format(
+            #     f"{self.namespace}{instr.bitsize}",
+            # ))
+            params.append("  let Size = {};".format(
+                instr.bytesize,
+            ))
+            if duplicated_outs:
+                params.append("  let Constraints = \"{}\";".format(','.join(
+                    ["${} = ${}".format(
+                        il, ol,
+                    ) for il, ol in duplicated_outs.items()]
+                )))
+            params = "\n".join(params)
+            instr_def.params = params
 
             bit_defs = []
             bit_instrs = []
@@ -196,13 +388,14 @@ class LLVMCompiler():
                         bit_sum,
                         bits.label[1:],
                     ))
-                bit_sum += bits.msb - bits.lsb + 1
+                bit_sum += bits.size()
             instr_def.bit_defs = "\n".join(bit_defs)
             instr_def.bit_insts = "\n".join(bit_instrs)
 
             attrs = []
             for k, v in instr_attr_table.items():
-                if not hasattr(instr, k):
+                # if not hasattr(instr, k):
+                if k not in instr.__dict__:
                     continue
                 if getattr(instr, k) is True:
                     if isinstance(v, str):
@@ -214,19 +407,188 @@ class LLVMCompiler():
 
             instr_defs.append(instr_def)
 
-        template_fname = "XpuInstrInfo.td"
-        template_fpath = os.path.join(self.template_dir, template_fname)
-        with open(template_fpath) as f:
-            template_str = f.read()
-        final_text = Template(source=template_str).render(
-            namespace=self.namespace,
-            operand_clss=operand_clss,
-            operand_types=operand_types,
-            instr_defs=instr_defs,
-        )
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "InstrInfo.td"
+        kwargs = {
+            "namespace": self.namespace,
+            "operand_clss": operand_clss,
+            "operand_types": operand_types,
+            "instr_defs": instr_defs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
 
-        out_fname = f"{self.namespace}InstrInfo.td"
-        out_fpath = os.path.join(self.outdir, out_fname)
-        os.makedirs(self.outdir, exist_ok=True)
-        with open(out_fpath, "w") as f:
-            f.write(final_text)
+    def gen_asmbackend_h(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "AsmBackend.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_asmbackend_cpp(self):
+        fixups = self._fixups
+        fixups_should_force_reloc = list()
+        fixups_adjust = fixups[:]
+        relax_instrs = list()
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "AsmBackend.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixups": fixups,
+            "fixups_should_force_reloc": fixups_should_force_reloc,
+            "fixups_adjust": fixups_adjust,
+            "relax_instrs": relax_instrs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_elfobjectwriter_cpp(self):
+        fixups = self._fixups
+        fixups_pc_rel = [fx for fx in fixups if fx.name[:6] == "pc_rel"]
+        fixup_relocs = [fx for fx in fixups if not isinstance(fx.bin, int)]
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "ELFObjectWriter.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixups_pc_rel": fixups_pc_rel,
+            "fixup_relocs": fixup_relocs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_fixupkinds_h(self):
+        fixups = self._fixups
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "FixupKinds.h"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixups": fixups,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_instprinter_cpp(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "InstPrinter.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_instprinter_h(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "InstPrinter.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_mcasminfo_cpp(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "MCAsmInfo.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_mcasminfo_h(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "MCAsmInfo.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_mccodeemitter_cpp(self):
+        fixups = self._fixups
+        fixup_relocs = [fx for fx in fixups if not isinstance(fx.bin, int)]
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "MCCodeEmitter.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "fixup_relocs": fixup_relocs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_mcexpr_cpp(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "MCExpr.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_mcexpr_h(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "Xpu", "MCExpr.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_cmakelists_txt(self, fdirs):
+        # fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
+        fname = "", "CMakeLists.txt"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_asmparser_cpp(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}/AsmParser".split("/")
+        fname = "Xpu", "AsmParser.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_asmparser_dir(self):
+        self.gen_cmakelists_txt(f"llvm/lib/Target/{_default_namespace}/AsmParser".split("/"))
+        self.gen_asmparser_cpp()
+
+    def gen_disassembler_cpp(self):
+        gpr_regs = []
+        for reggroup in self.isa.registers:
+            if reggroup.label != "GPR":
+                continue
+            for reg in reggroup:
+                gpr_regs.append(reg)
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}/Disassembler".split("/")
+        fname = "Xpu", "Disassembler.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "gpr_regs": gpr_regs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_disassembler_dir(self):
+        self.gen_cmakelists_txt(f"llvm/lib/Target/{_default_namespace}/Disassembler".split("/"))
+        self.gen_disassembler_cpp()
+
+    def gen_mctargetdesc_dir(self):
+        self.gen_cmakelists_txt(f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/"))
+        self.gen_asmbackend_cpp()
+        self.gen_asmbackend_h()
+        self.gen_asmbackend_cpp()
+        self.gen_elfobjectwriter_cpp()
+        self.gen_fixupkinds_h()
+        self.gen_instprinter_cpp()
+        self.gen_instprinter_h()
+        self.gen_mcasminfo_cpp()
+        self.gen_mcasminfo_h()
+        self.gen_mccodeemitter_cpp()
+        self.gen_mcexpr_cpp()
+        self.gen_mcexpr_h()
+
+    def gen_llvm_lib_target(self):
+        self.gen_lld_elf_arch_xpu_cpp()
+
+        self.gen_elfrelocs_xpu_def()
+
+        self.gen_asmparser_dir()
+        self.gen_disassembler_dir()
+        self.gen_mctargetdesc_dir()
+        self.gen_registerinfo_td()
+        self.gen_instrinfo_td()

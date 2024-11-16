@@ -6,8 +6,9 @@ from isana.isa import Context
 from .memory import Mem
 from .register import GPR, GPRC, CSR, PCR
 from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmHi20, ImmS6, ImmS9
-
 from .instruction import instructions
+
+from .compiler import compiler
 
 
 class RiscvContext(Context):
@@ -51,5 +52,6 @@ isa = RiscvISA(
         ImmS9,
     ),
     instructions=tuple(instructions),
+    compiler=compiler,
     context=RiscvContext,
 )

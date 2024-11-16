@@ -28,6 +28,7 @@ def {{ inst.varname }}: {{ namespace }}Inst<
   {{ inst.asmstr }},
   {{ inst.pattern }}>
 {
+{{ inst.params }}
 {{ inst.bit_defs }}
 {{ inst.bit_insts }}
 {{ inst.attrs }}

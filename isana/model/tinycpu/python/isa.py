@@ -5,6 +5,7 @@ from .memory import Mem
 from .register import GPR, PCR
 from .datatype import Imm
 from .instruction import instructions
+
 from .compiler import compiler
 
 

@@ -12,6 +12,34 @@ from isana.isa import Instruction, parameter, assembly, binary
 # * 0001 : rd, rs1, imm
 # * 0010 : rd, rs1, rs2
 # ** bin[13: 8] ( 6): funct
+class c_alu_ri(Instruction):
+    prm = parameter("rd:GPR", "imm:Imm")
+    asm = assembly("$opn $rd, $imm")
+    bin = binary("$imm[4:0], $rd[4:0], $opc[5:0]")
+    # iiiiiddd_ddoooooo
+
+
+class c_alu_rr(Instruction):
+    prm = parameter("rdrs1:GPR", "rdrs1:GPR, rs2:GPR")
+    asm = assembly("$opn $rdrs1, $rs2")
+    bin = binary("$rs2[4:0], $rdrs1[4:0], $opc[5:0]")
+    # iiiiiddd_ddoooooo
+
+
+class c_addi(c_alu_ri):
+    opn, opc = "c_addi", 0b00000_00000_001_00_0
+
+    def semantic(self, ctx, ins):
+        ctx.GPR[ins.rd] = ctx.GPR[ins.rs1] + ins.imm
+
+
+class c_add(c_alu_rr):
+    opn, opc = "c_add", 0b00000_00000_010_00_0
+
+    def semantic(self, ctx, ins):
+        ctx.GPR[ins.rd] = ctx.GPR[ins.rs1] + ctx.GPR[ins.rs2]
+
+
 class alu_ri(Instruction):
     prm = parameter("rd:GPR", "imm:Imm")
     asm = assembly("$opn $rd, $imm")
@@ -107,8 +135,8 @@ class jmp(branch):
     is_jump = True
 
     def semantic(self, ctx, ins):
-        ctx.GPR[ins.rd] = ctx.PC.pc + 4
-        ctx.PC.pc += ins.imm
+        ctx.GPR[ins.rd] = ctx.PCR.pc + 4
+        ctx.PCR.pc += ins.imm
 
 
 class beq(branch):
@@ -118,7 +146,7 @@ class beq(branch):
     def semantic(self, ctx, ins):
         cond = ctx.GPR[ins.rs1] == ctx.GPR[ins.rs2]
         if cond:
-            ctx.PC.pc += ins.imm
+            ctx.PCR.pc += ins.imm
 
 
 class call(branch):
@@ -127,8 +155,8 @@ class call(branch):
 
     def semantic(self, ctx, ins):
         t = ctx.GPR[ins.rs1]
-        ctx.GPR[ins.rd] = ctx.PC.pc + 4
-        ctx.PC.pc = t + ins.imm
+        ctx.GPR[ins.rd] = ctx.PCR.pc + 4
+        ctx.PCR.pc = t + ins.imm
 
 
 class ret(branch):
@@ -136,10 +164,12 @@ class ret(branch):
     is_return = True
 
     def semantic(self, ctx, ins):
-        ctx.PC.pc = ctx.t + ins.imm
+        ctx.PCR.pc = ctx.t + ins.imm
 
 
 instructions = [
+    c_addi,
+    c_add,
     li,
     addi,
     add,

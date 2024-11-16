@@ -1,9 +1,8 @@
-from isana.model.tinycpu.python.isa import isa_le
+from isana.model.riscv.python.isa import isa
 import os
 
 
 def test_compiler_generation():
-    isa = isa_le
     curdir = os.path.dirname(__file__)
 
     llvmcc = isa.compiler
