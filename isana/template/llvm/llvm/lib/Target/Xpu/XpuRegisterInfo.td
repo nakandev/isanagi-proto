@@ -1,6 +1,6 @@
 //=== Registers
-class {{ namespace }}Reg<bits<16> Enc, string n, list<string> alt = []>: Register<n> {
-    let HWEncoding = Enc;
+class {{ namespace }}Reg<bits<6> Enc, string n, list<string> alt = []>: Register<n> {
+    let HWEncoding{5-0} = Enc;
     let AltNames = alt;
     let Namespace = "{{ namespace }}";
 }

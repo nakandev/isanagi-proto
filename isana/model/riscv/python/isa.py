@@ -4,7 +4,7 @@ from isana.isa import Context
 # from isana.isa import unimpl
 
 from .memory import Mem
-from .register import GPR, GPRC, CSR, PCR
+from .register import PCR, GPR, GPRC#, CSR
 from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmHi20, ImmS6, ImmS9
 from .instruction import instructions
 
@@ -34,10 +34,10 @@ class RiscvISA(ISA):
 isa = RiscvISA(
     name="riscv",
     registers=(
+        PCR,
         GPR,
         GPRC,
-        PCR,
-        CSR,
+        # CSR,
     ),
     memories=(
         Mem,

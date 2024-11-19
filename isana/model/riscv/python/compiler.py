@@ -3,8 +3,8 @@ from isana.compiler import LLVMCompiler
 
 
 class RiscvCompiler(LLVMCompiler):
-    namespace = "MyRiscV"
-    triple = ("myriscv", "", "")
+    namespace = "CustomXPU"
+    triple = ("customxpu", "", "")
 
     def __init__(self, isa):
         super().__init__(isa)

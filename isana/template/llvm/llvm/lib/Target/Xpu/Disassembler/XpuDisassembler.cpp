@@ -50,21 +50,18 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}Disassembl
                                          create{{ namespace }}Disassembler);
 }
 
-static const uint16_t GPRDecoderTable[] = {
-    {%- for reg in gpr_regs %}
-    {{ namespace }}::{{ reg.label.upper() }}{% if not loop.last %},{% endif %}
-    {%- endfor %}
-};
-
-static DecodeStatus DecodeGPRRegisterClass(MCInst &Inst, uint64_t RegNo,
+{% for regcls in regcls_defs -%}
+static DecodeStatus Decode{{ regcls.varname }}RegisterClass(MCInst &Inst, uint64_t RegNo,
                                            uint64_t Address,
                                            const MCDisassembler *Decoder) {
-  if (RegNo >= 32)
+  if (RegNo >= 32)  // TODO fix condition
     return MCDisassembler::Fail;
 
-  Inst.addOperand(MCOperand::createReg(GPRDecoderTable[RegNo]));
+  MCRegister Reg = {{ namespace }}::{{ regcls.regs[0].label.upper() }} + RegNo;
+  Inst.addOperand(MCOperand::createReg(Reg));
   return MCDisassembler::Success;
 }
+{% endfor %}
 
 template <unsigned N, unsigned S>
 static DecodeStatus decodeUImmOperand(MCInst &Inst, uint64_t Imm,
@@ -107,6 +104,7 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
     return MCDisassembler::Fail;
   }
 
+  {% if 16 in instr_bitsizes -%}
   Insn = support::endian::read16le(Bytes.data());
   LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 16-bit table :\n");
   Result = decodeInstruction(DecoderTable{{ namespace }}16, MI, Insn, Address, this, STI);
@@ -114,7 +112,8 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
     Size = 2;
     return Result;
   }
-
+  {%- endif %}
+  {%- if 32 in instr_bitsizes -%}
   Insn = support::endian::read32le(Bytes.data());
   LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 32-bit table :\n");
   Result = decodeInstruction(DecoderTable{{ namespace }}32, MI, Insn, Address, this, STI);
@@ -122,6 +121,15 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
     Size = 4;
     return Result;
   }
-
+  {%- endif %}
+  {%- if 64 in instr_bitsizes -%}
+  Insn = support::endian::read32le(Bytes.data());
+  LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 64-bit table :\n");
+  Result = decodeInstruction(DecoderTable{{ namespace }}64, MI, Insn, Address, this, STI);
+  if (Result != MCDisassembler::Fail) {
+    Size = 8;
+    return Result;
+  }
+  {%- endif %}
   return Result;
 }

@@ -32,7 +32,9 @@ class RegisterDef(KwargsClass):
 class RegisterClassDef(KwargsClass):
     keys = (
         'varname',
+        'regs',
         'reg_varnames',
+        'bitsize',
     )
 
 class OperandCls(KwargsClass):
@@ -265,12 +267,21 @@ class LLVMCompiler():
     def gen_registerinfo_td(self):
         isa = self.isa
 
+        def reg_varname(reg, reggroup):
+            if reggroup.label == "GPR":
+                return reg.label.upper()
+            else:
+                return "{}_{}".format(reg.label, reggroup.label).upper()
+
         reg_defs = []
         for reggroup in isa.registers:
+            if reggroup.label != "GPR":
+                continue
             for reg in reggroup:
                 reg_defs.append(RegisterDef(
                     namespace=self.namespace,
                     varname=reg.label.upper(),
+                    # varname=reg_varname(reg, reggroup),
                     no=reg.number,
                     name=reg.label,
                     aliases="[{}]".format(",".join('"{}"'.format(n) for n in reg.aliases)),
@@ -279,9 +290,13 @@ class LLVMCompiler():
 
         regcls_defs = []
         for reggroup in isa.registers:
+            if reggroup.label[:3] != "GPR":
+                continue
             regcls_defs.append(RegisterClassDef(
                 varname=reggroup.label,
                 reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
+                # reg_varnames=','.join([reg_varname(reg, reggroup) for reg in reggroup]),
+                bitsize=int(len(reggroup.regs) - 1).bit_length(),
             ))
 
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
@@ -367,28 +382,82 @@ class LLVMCompiler():
             params = "\n".join(params)
             instr_def.params = params
 
+            bitss_by_name = dict()
+            for bits in instr.bin.bitss:
+                bitss_by_name.setdefault(bits.label, list())
+                bitss_by_name[bits.label].append(bits)
+
             bit_defs = []
             bit_instrs = []
-            bit_sum = 0
-            for bits in reversed(instr.bin.bitss):
-                if bits.label == "$opc":
-                    bits_value = (instr.opc >> bit_sum) & (2 ** (bits.msb - bits.lsb) - 1)
-                    bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
-                        bit_sum + bits.msb - bits.lsb,
-                        bit_sum,
-                        bits_value,
-                    ))
+            for label, bitss in reversed(bitss_by_name.items()):
+                if label == "$opc":
+                    pass
                 else:
+                    bitss_size = sum([b.size() for b in bitss])
                     bit_defs.append("  bits<{}> {};".format(
-                        bits.size(),
-                        bits.label[1:],
+                        bitss_size,
+                        label[1:],
                     ))
-                    bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
-                        bit_sum + bits.msb,
-                        bit_sum,
-                        bits.label[1:],
-                    ))
-                bit_sum += bits.size()
+                bit_sum = 0
+                for bits in reversed(bitss):
+                    if bits.label == "$opc":
+                        # bits_value = (instr.opc >> bit_sum) & (2 ** (bits.msb - bits.lsb) - 1)
+                        bits_value = (instr.opc >> bits.offset) & (2 ** (bits.size()) - 1)
+                        let_str = ""
+                        if bits.size() == 1:
+                            let_str += "  let Inst{{{}}} = ".format(bits.offset)
+                        else:
+                            let_str += "  let Inst{{{}-{}}} = ".format(
+                                bits.offset + bits.size() - 1,
+                                bits.offset,
+                            )
+                        let_str += "{};".format(bits_value)
+                        bit_instrs.append(let_str)
+                    else:
+                        let_str = ""
+                        if bits.size() == 1:
+                            let_str += "  let Inst{{{}}} = ".format(bits.offset)
+                        else:
+                            let_str += "  let Inst{{{}-{}}} = ".format(
+                                bits.offset + bits.size() - 1,
+                                bits.offset,
+                            )
+                        if bits.size() == 1:
+                            let_str += "{}{{{}}};".format(bits.label[1:], bit_sum)
+                        else:
+                            let_str += "{}{{{}-{}}};".format(
+                                bits.label[1:],
+                                bit_sum + bits.size() - 1,
+                                bit_sum,
+                            )
+                        # bit_instrs.append("  let Inst{{{}-{}}} = {}{{{}-{}}};".format(
+                        #     bits.offset + bits.size() - 1,
+                        #     bits.offset,
+                        #     bits.label[1:],
+                        #     bit_sum + bits.size() - 1,
+                        #     bit_sum,
+                        # ))
+                        bit_instrs.append(let_str)
+                    bit_sum += bits.size()
+            # for bits in reversed(instr.bin.bitss):
+            #     if bits.label == "$opc":
+            #         bits_value = (instr.opc >> bit_sum) & (2 ** (bits.msb - bits.lsb) - 1)
+            #         bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
+            #             bit_sum + bits.msb - bits.lsb,
+            #             bit_sum,
+            #             bits_value,
+            #         ))
+            #     else:
+            #         bit_defs.append("  bits<{}> {};".format(
+            #             bits.size(),
+            #             bits.label[1:],
+            #         ))
+            #         bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
+            #             bit_sum + bits.msb - bits.lsb,
+            #             bit_sum,
+            #             bits.label[1:],
+            #         ))
+            #     bit_sum += bits.size()
             instr_def.bit_defs = "\n".join(bit_defs)
             instr_def.bit_insts = "\n".join(bit_instrs)
 
@@ -548,18 +617,27 @@ class LLVMCompiler():
         self.gen_asmparser_cpp()
 
     def gen_disassembler_cpp(self):
-        gpr_regs = []
+        instr_bitsizes = list(set([ins().bitsize for ins in self.isa.instructions]))
+
+        regcls_defs = []
         for reggroup in self.isa.registers:
-            if reggroup.label != "GPR":
+            if reggroup.label[:3] != "GPR":
                 continue
-            for reg in reggroup:
-                gpr_regs.append(reg)
+            regcls_defs.append(RegisterClassDef(
+                varname=reggroup.label,
+                regs=reggroup.regs,
+                reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
+                # reg_varnames=','.join([reg_varname(reg, reggroup) for reg in reggroup]),
+                bitsize=int(len(reggroup.regs) - 1).bit_length(),
+            ))
 
         fdirs = f"llvm/lib/Target/{_default_namespace}/Disassembler".split("/")
         fname = "Xpu", "Disassembler.cpp"
         kwargs = {
             "namespace": self.namespace,
-            "gpr_regs": gpr_regs,
+            # "gpr_regs": gpr_regs,
+            "instr_bitsizes": instr_bitsizes,
+            "regcls_defs": regcls_defs,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 

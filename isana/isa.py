@@ -4,6 +4,7 @@ import re
 
 class Bits():
     def __init__(self, *args, **kwargs):
+        self.offset = -1
         bit_slice = r"\s*(\d+)\s*:\s*(\d+)\s*"
         bit_index = r"\s*(\d+)\s*"
         if len(args) == 1 and isinstance(args[0], str):
@@ -639,6 +640,10 @@ class InstructionBinary():
         bitss = list()
         for bitptn in bitptns:
             bitss.append(Bits(bitptn))
+        offset = 0
+        for bits in reversed(bitss):
+            bits.offset = offset
+            offset += bits.size()
         return bitss
 
     @property
