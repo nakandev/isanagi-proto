@@ -97,6 +97,10 @@ class c_jal(InstrCJ):
                  "$imm[6], $imm[7], $imm[3:1], $imm[5], $opc[1:0]")
     is_call = True
 
+    def semantic(self, ctx, ins):
+        ctx.GPR[1] = ctx.PCR.pc + 4
+        ctx.PCR.pc += ins.imm
+
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
 
@@ -177,6 +181,9 @@ class c_j(InstrCJ):
                  "$imm[6], $imm[7], $imm[3:1], $imm[5], $opc[1:0]")
     is_jump = True
 
+    def semantic(self, ctx, ins):
+        ctx.PCR.pc += ins.imm
+
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
 
@@ -187,6 +194,11 @@ class c_beqz(InstrCB):
                  "$imm[7:6], $imm[2:1], $imm[5], $opc[1:0]")
     is_branch = True
 
+    def semantic(self, ctx, ins):
+        cond = ctx.GPR[ins.rdrs1] == 0
+        if cond:
+            ctx.PCR.pc += ins.imm
+
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
 
@@ -196,6 +208,11 @@ class c_bnez(InstrCB):
     bin = binary("$opc[15:13], $imm[8], $imm[4:3], $rdrs1[2:0], "
                  "$imm[7:6], $imm[2:1], $imm[5], $opc[1:0]")
     is_branch = True
+
+    def semantic(self, ctx, ins):
+        cond = ctx.GPR[ins.rdrs1] != 0
+        if cond:
+            ctx.PCR.pc += ins.imm
 
     def target_addr(self):
         return self.addr + self.params.inputs['imm'].value
@@ -247,6 +264,10 @@ class c_jr(InstrCR):
     bin = binary("$opc[15:12], $rdrs1[4:0], $opc[6:2], $opc[1:0]")
     is_indirect = True
 
+    def semantic(self, ctx, ins):
+        t = ctx.GPR[ins.rdrs1]
+        ctx.PCR.pc = t + ins.imm
+
     @property
     def is_jump(self):
         return self.params.outputs['rdrs1'].number != 1
@@ -272,6 +293,11 @@ class c_jalr(InstrCR):
     bin = binary("$opc[15:12], $rdrs1[4:0], $opc[6:2], $opc[1:0]")
     is_call = True
     is_indirect = True
+
+    def semantic(self, ctx, ins):
+        t = ctx.GPR[ins.rdrs1]
+        ctx.GPR[1] = ctx.PCR.pc + 4
+        ctx.PCR.pc = t + ins.imm
 
 
 class c_add(InstrCR):

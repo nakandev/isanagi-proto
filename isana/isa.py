@@ -226,8 +226,9 @@ class RegisterGroup():
         self.label = label
         self.width = kwargs.get('width')
         self.regs = kwargs.get('regs')
-        for reg in self.regs:
+        for i, reg in enumerate(self.regs):
             reg.group = self
+            reg.idx = i
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -259,6 +260,9 @@ class RegisterGroup():
 
     def __iter__(self):
         yield from self.regs
+
+    def max_reg_number(self):
+        return max([reg.number for reg in self.regs])
 
 
 class Register():

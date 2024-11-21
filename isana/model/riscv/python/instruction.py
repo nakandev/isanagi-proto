@@ -57,14 +57,14 @@ if True:
     instructions += instructionsI
 if True:
     instructions += instructionsZifencei
-# if True:
-#     instructions += instructionsZicsr
+if True:
+    instructions += instructionsZicsr
 if True:
     instructions += instructionsM
 # if True:
 #     instructions += instructionsA
-# if True:
-#     instructions += instructionsF
+if True:
+    instructions += instructionsF
 # if True:
 #     instructions += instructionsD
 # if True:

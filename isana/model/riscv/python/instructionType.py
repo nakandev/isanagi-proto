@@ -34,7 +34,7 @@ class InstrRFloat(Instruction):
 
 class InstrR2Float(Instruction):
     prm = parameter("rd:GPR", "rs1:GPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2")
+    asm = assembly("$opn $rd, $rs1")
     bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
 
 

@@ -20,9 +20,17 @@ class KwargsClass():
             setattr(self, k, v)
 
 
+class RegisterBase(KwargsClass):
+    keys = (
+        'name',
+        'bitsize',
+    )
+
+
 class RegisterDef(KwargsClass):
     keys = (
         'varname',
+        'basename',
         'no',
         'name',
         'aliases',
@@ -267,21 +275,35 @@ class LLVMCompiler():
     def gen_registerinfo_td(self):
         isa = self.isa
 
-        def reg_varname(reg, reggroup):
-            if reggroup.label == "GPR":
-                return reg.label.upper()
-            else:
-                return "{}_{}".format(reg.label, reggroup.label).upper()
+        reg_base_tables = {}
+        for reggroup in isa.registers:
+            for reg in reggroup:
+                reg_clsname = reg.__class__.__name__
+                reg_base_tables.setdefault(reg_clsname, list())
+                reg_base_tables[reg_clsname].append(reg)
+        reg_bases = []
+        for name, regs in reg_base_tables.items():
+            if name == "Register":
+                continue
+            max_no = max([r.number for r in regs])
+            reg_bases.append(RegisterBase(
+                name=name,
+                bitsize=max_no.bit_length(),
+            ))
 
         reg_defs = []
+        reg_labels = []
         for reggroup in isa.registers:
-            if reggroup.label != "GPR":
+            if reggroup.label == "PCR":
                 continue
             for reg in reggroup:
+                if reg.label in reg_labels:
+                    continue
+                reg_labels.append(reg.label)
                 reg_defs.append(RegisterDef(
                     namespace=self.namespace,
                     varname=reg.label.upper(),
-                    # varname=reg_varname(reg, reggroup),
+                    basename=reg.__class__.__name__,
                     no=reg.number,
                     name=reg.label,
                     aliases="[{}]".format(",".join('"{}"'.format(n) for n in reg.aliases)),
@@ -290,12 +312,11 @@ class LLVMCompiler():
 
         regcls_defs = []
         for reggroup in isa.registers:
-            if reggroup.label[:3] != "GPR":
+            if reggroup.label == "PCR":
                 continue
             regcls_defs.append(RegisterClassDef(
                 varname=reggroup.label,
                 reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
-                # reg_varnames=','.join([reg_varname(reg, reggroup) for reg in reggroup]),
                 bitsize=int(len(reggroup.regs) - 1).bit_length(),
             ))
 
@@ -303,6 +324,7 @@ class LLVMCompiler():
         fname = "Xpu", "RegisterInfo.td"
         kwargs = {
             "namespace": self.namespace,
+            "reg_bases": reg_bases,
             "reg_defs": reg_defs,
             "regcls_defs": regcls_defs,
         }
@@ -617,17 +639,28 @@ class LLVMCompiler():
         self.gen_asmparser_cpp()
 
     def gen_disassembler_cpp(self):
+
+        def reg_varname(reg, reggroup):
+            if reggroup.label == "GPR":
+                return reg.label.upper()
+            else:
+                return "{}_{}".format(reg.label, reggroup.label).upper()
+
         instr_bitsizes = list(set([ins().bitsize for ins in self.isa.instructions]))
 
         regcls_defs = []
         for reggroup in self.isa.registers:
-            if reggroup.label[:3] != "GPR":
+            if reggroup.label == "PCR":
                 continue
+            reg_varnames = ["{}::{}".format(
+                self.namespace, reg.label.upper()) for reg in reggroup]
+            reg_varnames = ',\n'.join(reg_varnames)
             regcls_defs.append(RegisterClassDef(
                 varname=reggroup.label,
                 regs=reggroup.regs,
-                reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
+                # reg_varnames=','.join([reg.label.upper() for reg in reggroup]),
                 # reg_varnames=','.join([reg_varname(reg, reggroup) for reg in reggroup]),
+                reg_varnames=reg_varnames,
                 bitsize=int(len(reggroup.regs) - 1).bit_length(),
             ))
 
