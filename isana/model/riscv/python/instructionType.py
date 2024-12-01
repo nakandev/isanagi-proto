@@ -20,12 +20,6 @@ class InstrR2(Instruction):
     bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $opc[14:12], $rd[4:0], $opc[6:0]")
 
 
-class InstrR4(Instruction):
-    prm = parameter("rd:GPR", "rs1:GPR, rs2:GPR, rs3:GPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2, $rs3")
-    bin = binary("$rs3[4:0], $opc[26:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
-
-
 class InstrI(Instruction):
     prm = parameter("rd:GPR", "rs1:GPR, imm:ImmS12")
     asm = assembly("$opn $rd, $rs1, $imm")
@@ -207,20 +201,20 @@ class InstrFR2(Instruction):
 
 
 class InstrFR4(Instruction):
-    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rs3:FPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2, $rs3")
+    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rs3:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rs2, $rs3, $rm")
     bin = binary("$rs3[4:0], $opc[26:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
 
 
 class InstrFRrm(Instruction):
-    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2")
+    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rs2, $rm")
     bin = binary("$opc[31:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
 
 
 class InstrFR2rm(Instruction):
-    prm = parameter("rd:FPR", "rs1:FPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1")
+    prm = parameter("rd:FPR", "rs1:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rm")
     bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
 
 

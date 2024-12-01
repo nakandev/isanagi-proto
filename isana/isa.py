@@ -311,6 +311,7 @@ class Immediate():
     def __init__(self, label: str, **kwargs):
         self.label = label
         self.width = kwargs.get('width')
+        self.enums = None
 
     def cast(self, value):
         return value

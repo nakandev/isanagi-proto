@@ -50,20 +50,31 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}Disassembl
                                          create{{ namespace }}Disassembler);
 }
 
+{#
 {% for regcls in regcls_defs -%}
 static const uint16_t DecoderTable{{ regcls.varname }}[] = {
 {{ regcls.reg_varnames }}
 };
 {% endfor %}
+#}
 
 {% for regcls in regcls_defs -%}
 static DecodeStatus Decode{{ regcls.varname }}RegisterClass(MCInst &Inst, uint64_t RegNo,
                                            uint64_t Address,
                                            const MCDisassembler *Decoder) {
-  if (RegNo >= {{ regcls.regs|length }})
+  // if (RegNo >= {{ regcls.regs|length }})
+  //   return MCDisassembler::Fail;
+  // 
+  // Inst.addOperand(MCOperand::createReg(DecoderTable{{ regcls.varname }}[RegNo]));
+  uint16_t RegVar;
+  switch (RegNo) {
+  default:
     return MCDisassembler::Fail;
-
-  Inst.addOperand(MCOperand::createReg(DecoderTable{{ regcls.varname }}[RegNo]));
+  {% for reg in regcls.regs -%}
+  case {{ reg.number }}: RegVar = {{ namespace }}::{{ reg.label.upper() }}; break;
+  {% endfor %}
+  }
+  Inst.addOperand(MCOperand::createReg(RegVar));
   return MCDisassembler::Success;
 }
 {% endfor %}

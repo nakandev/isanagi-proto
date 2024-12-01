@@ -426,7 +426,7 @@ CSR = RegisterGroup("CSR", width=xlen, regs=(
     CSRReg(0x32D, "mhpmevent13"),
     CSRReg(0x32E, "mhpmevent14"),
     CSRReg(0x32F, "mhpmevent15"),
-    CSRReg(0x320, "mhpmevent16"),
+    CSRReg(0x330, "mhpmevent16"),
     CSRReg(0x331, "mhpmevent17"),
     CSRReg(0x332, "mhpmevent18"),
     CSRReg(0x333, "mhpmevent19"),
