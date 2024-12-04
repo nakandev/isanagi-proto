@@ -4,10 +4,11 @@ from isana.isa import Context
 # from isana.isa import unimpl
 
 from .memory import Mem
-from .register import GPR, GPRC, CSR, PCR
-from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmHi20, ImmS6, ImmS9
-
+from .register import PCR, GPR, GPRC, FPR, CSR
+from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmHi20, ImmS6, ImmS9, RMImm
 from .instruction import instructions
+
+from .compiler import compiler
 
 
 class RiscvContext(Context):
@@ -33,9 +34,10 @@ class RiscvISA(ISA):
 isa = RiscvISA(
     name="riscv",
     registers=(
+        PCR,
         GPR,
         GPRC,
-        PCR,
+        FPR,
         CSR,
     ),
     memories=(
@@ -49,7 +51,9 @@ isa = RiscvISA(
         ImmHi20,
         ImmS6,
         ImmS9,
+        RMImm,
     ),
     instructions=tuple(instructions),
+    compiler=compiler,
     context=RiscvContext,
 )

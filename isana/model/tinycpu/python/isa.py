@@ -6,6 +6,8 @@ from .register import GPR, PCR
 from .datatype import Imm
 from .instruction import instructions
 
+from .compiler import compiler
+
 
 class TinyCpuContext(Context):
     def __init__(self, **kwargs):
@@ -41,6 +43,7 @@ isa_le = TinyCpuISA(
         Imm,
     ),
     instructions=instructions,
+    compiler=compiler,
     context=TinyCpuContext,
 )
 
@@ -58,5 +61,6 @@ isa_be = TinyCpuISA(
         Imm,
     ),
     instructions=instructions,
+    compiler=compiler,
     context=TinyCpuContext,
 )

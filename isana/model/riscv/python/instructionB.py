@@ -5,7 +5,7 @@ from isana.isa import binary
 # from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
     InstrR, InstrR2,
-    InstrI, InstrIShift,
+    InstrIShift,
     # InstrS,
     # InstrB,
     # InstrU,
@@ -164,7 +164,7 @@ class bclr(InstrR):
     opn, opc = "bclr", 0b0100100_00000_00000_001_00000_0110011
 
 
-class bclri(InstrI):
+class bclri(InstrIShift):
     opn, opc = "bclri", 0b0100100_00000_00000_001_00000_0010011
 
 
@@ -172,7 +172,7 @@ class bext(InstrR):
     opn, opc = "bext", 0b0100100_00000_00000_101_00000_0110011
 
 
-class bexti(InstrI):
+class bexti(InstrIShift):
     opn, opc = "bexti", 0b0100100_00000_00000_101_00000_0010011
 
 
@@ -180,7 +180,7 @@ class binv(InstrR):
     opn, opc = "binv", 0b0110100_00000_00000_001_00000_0110011
 
 
-class binvi(InstrI):
+class binvi(InstrIShift):
     opn, opc = "binvi", 0b0110100_00000_00000_001_00000_0010011
 
 
@@ -188,7 +188,7 @@ class bset(InstrR):
     opn, opc = "bset", 0b010100_00000_00000_001_00000_0110011
 
 
-class bseti(InstrI):
+class bseti(InstrIShift):
     opn, opc = "bseti", 0b0010100_00000_00000_001_00000_0010011
 
 

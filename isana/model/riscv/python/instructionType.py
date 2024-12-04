@@ -20,24 +20,6 @@ class InstrR2(Instruction):
     bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $opc[14:12], $rd[4:0], $opc[6:0]")
 
 
-class InstrR4(Instruction):
-    prm = parameter("rd:GPR", "rs1:GPR, rs2:GPR, rs3:GPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2, $rs3")
-    bin = binary("$rs3[4:0], $opc[26:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
-
-
-class InstrRFloat(Instruction):
-    prm = parameter("rd:GPR", "rs1:GPR, rs2:GPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2")
-    bin = binary("$opc[31:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
-
-
-class InstrR2Float(Instruction):
-    prm = parameter("rd:GPR", "rs1:GPR, rm:Imm")
-    asm = assembly("$opn $rd, $rs1, $rs2")
-    bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
-
-
 class InstrI(Instruction):
     prm = parameter("rd:GPR", "rs1:GPR, imm:ImmS12")
     asm = assembly("$opn $rd, $rs1, $imm")
@@ -203,6 +185,49 @@ class InstrCMPP(Instruction):
     prm = parameter("", "rlist:Imm, imm:Imm")
     asm = assembly("$opn $rlist, $imm")
     bin = binary("$opc[15:10], $opc[9:8], $rlist[3:0], $imm[5:4], $opc[1:0]")
+
+
+# Type for F-extention
+class InstrFR(Instruction):
+    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR")
+    asm = assembly("$opn $rd, $rs1, $rs2")
+    bin = binary("$opc[31:25], $rs2[4:0], $rs1[4:0], $opc[14:12], $rd[4:0], $opc[6:0]")
+
+
+class InstrFR2(Instruction):
+    prm = parameter("rd:FPR", "rs1:FPR")
+    asm = assembly("$opn $rd, $rs1")
+    bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $opc[14:12], $rd[4:0], $opc[6:0]")
+
+
+class InstrFR4(Instruction):
+    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rs3:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rs2, $rs3, $rm")
+    bin = binary("$rs3[4:0], $opc[26:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
+
+
+class InstrFRrm(Instruction):
+    prm = parameter("rd:FPR", "rs1:FPR, rs2:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rs2, $rm")
+    bin = binary("$opc[31:25], $rs2[4:0], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
+
+
+class InstrFR2rm(Instruction):
+    prm = parameter("rd:FPR", "rs1:FPR, rm:RMImm")
+    asm = assembly("$opn $rd, $rs1, $rm")
+    bin = binary("$opc[31:25], $opc[24:20], $rs1[4:0], $rm[2:0], $rd[4:0], $opc[6:0]")
+
+
+class InstrFILoad(Instruction):
+    prm = parameter("rd:FPR", "rs1:GPR, imm:ImmS12")
+    asm = assembly("$opn $rd, $imm ($rs1)")
+    bin = binary("$imm[11:0], $rs1[4:0], $opc[14:12], $rd[4:0], $opc[6:0]")
+
+
+class InstrFS(Instruction):
+    prm = parameter("rs2:FPR", "rs1:GPR, imm:ImmS12")
+    asm = assembly("$opn $rs2, $imm ($rs1)")
+    bin = binary("$imm[11:5], $rs2[4:0], $rs1[4:0], $opc[14:12], $imm[4:0], $opc[6:0]")
 
 
 # Type for V-extention

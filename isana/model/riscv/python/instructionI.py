@@ -30,7 +30,7 @@ class auipc(InstrU):
 
 
 class jal(InstrJ):
-    opn, opc = "jal", 0b00000000000000000000_00000_1101111
+    opn, opc = "jal", 0b0_0000000000_0_00000000_00000_1101111
 
     def semantic(self, ctx, ins):
         ctx.GPR[ins.rd] = ctx.PCR.pc + 4

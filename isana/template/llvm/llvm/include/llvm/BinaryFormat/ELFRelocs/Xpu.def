@@ -1,0 +1,9 @@
+
+#ifndef ELF_RELOC
+#error "ELF_RELOC must be defined"
+#endif
+
+ELF_RELOC(R_{{ namespace.upper() }}_NONE, 0)
+{% for fx in fixups -%}
+ELF_RELOC(R_{{ namespace.upper() }}_{{ fx.name.upper() }}, {{ loop.index }})
+{% endfor %}

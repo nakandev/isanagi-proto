@@ -4,6 +4,7 @@ import re
 
 class Bits():
     def __init__(self, *args, **kwargs):
+        self.offset = -1
         bit_slice = r"\s*(\d+)\s*:\s*(\d+)\s*"
         bit_index = r"\s*(\d+)\s*"
         if len(args) == 1 and isinstance(args[0], str):
@@ -88,10 +89,19 @@ class ISA():
         self.memories = kwargs.pop('memories')
         self.immediates = kwargs.pop('immediates')
         self.instructions = kwargs.pop('instructions')
+
+        self._compiler = kwargs.pop('compiler', None)
+        if (type(self._compiler) is type(object)):
+            self._compiler = self._compiler(self)
+
         self.context = kwargs.pop('context')
         self._ctx = None
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    @property
+    def compiler(self):
+        return self._compiler
 
     def is_opc_type(self, tp: str):
         return tp == "Opc"
@@ -216,8 +226,9 @@ class RegisterGroup():
         self.label = label
         self.width = kwargs.get('width')
         self.regs = kwargs.get('regs')
-        for reg in self.regs:
+        for i, reg in enumerate(self.regs):
             reg.group = self
+            reg.idx = i
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -249,6 +260,9 @@ class RegisterGroup():
 
     def __iter__(self):
         yield from self.regs
+
+    def max_reg_number(self):
+        return max([reg.number for reg in self.regs])
 
 
 class Register():
@@ -297,6 +311,7 @@ class Immediate():
     def __init__(self, label: str, **kwargs):
         self.label = label
         self.width = kwargs.get('width')
+        self.enums = kwargs.get('enums', None)
 
     def cast(self, value):
         return value
@@ -630,6 +645,10 @@ class InstructionBinary():
         bitss = list()
         for bitptn in bitptns:
             bitss.append(Bits(bitptn))
+        offset = 0
+        for bits in reversed(bitss):
+            bits.offset = offset
+            offset += bits.size()
         return bitss
 
     @property
