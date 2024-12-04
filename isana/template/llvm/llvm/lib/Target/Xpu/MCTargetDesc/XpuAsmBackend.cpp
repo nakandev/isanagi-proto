@@ -68,7 +68,7 @@ adjustFixupValue(
   {% endfor %}
   {% for fx in fixups_adjust -%}
   case {{ namespace }}::{{ fx.name_enum }}: {
-    const uint64_t val = Value;
+    const uint64_t val = Value;  // TODO: remove unused variable
     return 0
     {% for proc in fx.reloc_procs -%}
     {{ proc }}

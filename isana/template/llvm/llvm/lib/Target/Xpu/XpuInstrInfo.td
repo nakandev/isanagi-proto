@@ -1,6 +1,23 @@
+//=== AsmOperandClasses
+{% for asmopcls in asm_operand_clss -%}
+def {{ asmopcls.name }}AsmOp: AsmOperandClass {
+  let Name = "{{ asmopcls.name }}AsmOp";
+  let PredicateMethod = "isImm";
+  let RenderMethod = "addImmOperands";
+  let ParserMethod = "parse{{ asmopcls.name }}AsmOp";
+}
+{% endfor %}
+
 //=== Operands
 {% for opcls in operand_clss -%}
+{% if opcls.asm_operand_cls -%}
+def {{ opcls.varname }}: Operand<{{ opcls.basecls }}> {
+  let ParserMatchClass = {{ opcls.asm_operand_cls.name }}AsmOp;
+  let PrintMethod = "print{{ opcls.asm_operand_cls.name }}";
+}
+{% else -%}
 def {{ opcls.varname }}: Operand<{{ opcls.basecls }}>;
+{% endif -%}
 {% endfor %}
 
 //=== OperandTypes

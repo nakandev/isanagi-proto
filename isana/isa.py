@@ -91,7 +91,7 @@ class ISA():
         self.instructions = kwargs.pop('instructions')
 
         self._compiler = kwargs.pop('compiler', None)
-        if (type(self._compiler) == type(object)):
+        if (type(self._compiler) is type(object)):
             self._compiler = self._compiler(self)
 
         self.context = kwargs.pop('context')
@@ -311,7 +311,7 @@ class Immediate():
     def __init__(self, label: str, **kwargs):
         self.label = label
         self.width = kwargs.get('width')
-        self.enums = None
+        self.enums = kwargs.get('enums', None)
 
     def cast(self, value):
         return value

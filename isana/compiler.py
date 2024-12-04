@@ -45,6 +45,12 @@ class RegisterClassDef(KwargsClass):
         'bitsize',
     )
 
+class AsmOperandCls(KwargsClass):
+    keys = (
+        'name',
+        'enums',
+    )
+
 class OperandCls(KwargsClass):
     keys = (
         'varname',
@@ -218,11 +224,10 @@ class LLVMCompiler():
         return os.path.join(os.path.dirname(__file__), "template", "llvm")
 
     def _init_fixups(self):
-        isa = self.isa
         if len(self.fixups) > 0:
             fixups = self.fixups[:]
         else:
-            fixups = auto_make_fixups(isa)
+            fixups = auto_make_fixups(self.isa)
         for fixup in fixups:
             fixup.namespace = self.namespace
             fixup.name_enum = f"fixup_{fixup.namespace.lower()}_{fixup.name}"
@@ -273,10 +278,8 @@ class LLVMCompiler():
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_registerinfo_td(self):
-        isa = self.isa
-
         reg_base_tables = {}
-        for reggroup in isa.registers:
+        for reggroup in self.isa.registers:
             for reg in reggroup:
                 reg_clsname = reg.__class__.__name__
                 reg_base_tables.setdefault(reg_clsname, list())
@@ -293,7 +296,7 @@ class LLVMCompiler():
 
         reg_defs = []
         reg_labels = []
-        for reggroup in isa.registers:
+        for reggroup in self.isa.registers:
             if reggroup.label == "PCR":
                 continue
             for reg in reggroup:
@@ -311,7 +314,7 @@ class LLVMCompiler():
                 ))
 
         regcls_defs = []
-        for reggroup in isa.registers:
+        for reggroup in self.isa.registers:
             if reggroup.label == "PCR":
                 continue
             regcls_defs.append(RegisterClassDef(
@@ -331,19 +334,29 @@ class LLVMCompiler():
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instrinfo_td(self):
-        isa = self.isa
+        asm_operand_clss = []
         operand_clss = []
         operand_types = []
-        for imm in isa.immediates:
-            operand_clss.append(OperandCls(
+        for imm in self.isa.immediates:
+            operand_cls = OperandCls(
                 varname=imm.label,
                 basecls="i32",
-            ))
+            )
+            if isinstance(imm.enums, dict):
+                asm_operand_cls = AsmOperandCls(
+                    name=imm.label,
+                    enums=imm.enums,
+                )
+                asm_operand_clss.append(asm_operand_cls)
+                operand_cls.asm_operand_cls = asm_operand_cls
+            else:
+                operand_cls.asm_operand_cls = None
+            operand_clss.append(operand_cls)
             operand_types.append(OperandType(
                 varname=imm.label + "Tp",
                 basecls="i32",
             ))
-        for mem in isa.memories:
+        for mem in self.isa.memories:
             operand_clss.append(OperandCls(
                 varname=mem.label,
                 basecls="i32",
@@ -354,7 +367,7 @@ class LLVMCompiler():
             ))
 
         instr_defs = []
-        for cls in isa.instructions:
+        for cls in self.isa.instructions:
             instr = cls()
             instr_def = InstrDefs()
 
@@ -502,6 +515,7 @@ class LLVMCompiler():
         fname = "Xpu", "InstrInfo.td"
         kwargs = {
             "namespace": self.namespace,
+            "asm_operand_clss": asm_operand_clss,
             "operand_clss": operand_clss,
             "operand_types": operand_types,
             "instr_defs": instr_defs,
@@ -559,18 +573,38 @@ class LLVMCompiler():
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instprinter_cpp(self):
+        asm_operand_clss = []
+        for imm in self.isa.immediates:
+            if isinstance(imm.enums, dict):
+                asm_operand_cls = AsmOperandCls(
+                    name=imm.label,
+                    enums=imm.enums,
+                )
+                asm_operand_clss.append(asm_operand_cls)
+
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "InstPrinter.cpp"
         kwargs = {
             "namespace": self.namespace,
+            "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instprinter_h(self):
+        asm_operand_clss = []
+        for imm in self.isa.immediates:
+            if isinstance(imm.enums, dict):
+                asm_operand_cls = AsmOperandCls(
+                    name=imm.label,
+                    enums=imm.enums,
+                )
+                asm_operand_clss.append(asm_operand_cls)
+
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "InstPrinter.h"
         kwargs = {
             "namespace": self.namespace,
+            "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -627,10 +661,20 @@ class LLVMCompiler():
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_asmparser_cpp(self):
+        asm_operand_clss = []
+        for imm in self.isa.immediates:
+            if isinstance(imm.enums, dict):
+                asm_operand_cls = AsmOperandCls(
+                    name=imm.label,
+                    enums=imm.enums,
+                )
+                asm_operand_clss.append(asm_operand_cls)
+
         fdirs = f"llvm/lib/Target/{_default_namespace}/AsmParser".split("/")
         fname = "Xpu", "AsmParser.cpp"
         kwargs = {
             "namespace": self.namespace,
+            "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 

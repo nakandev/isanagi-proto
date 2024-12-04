@@ -21,7 +21,11 @@ using namespace llvm;
 #define PRINT_ALIAS_INSTR
 #include "{{ namespace }}GenAsmWriter.inc"
 
-bool {{ namespace }}InstPrinter::applyTargetSpecificCLOption(StringRef Opt) {
+bool
+{{ namespace }}InstPrinter::applyTargetSpecificCLOption(
+  StringRef Opt
+)
+{
   if (Opt == "no-aliases") {
     PrintAliases = false;
     return true;
@@ -33,21 +37,33 @@ bool {{ namespace }}InstPrinter::applyTargetSpecificCLOption(StringRef Opt) {
   return false;
 }
 
-void {{ namespace }}InstPrinter::printInst(const MCInst *MI, uint64_t Address,
-                                 StringRef Annot, const MCSubtargetInfo &STI,
-                                 raw_ostream &O) {
+void
+{{ namespace }}InstPrinter::printInst(
+  const MCInst *MI, uint64_t Address,
+  StringRef Annot, const MCSubtargetInfo &STI,
+  raw_ostream &O
+)
+{
   if (!printAliasInstr(MI, Address, O))
     printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
 }
 
-void {{ namespace }}InstPrinter::printRegName(raw_ostream &O, MCRegister Reg) const {
+void
+{{ namespace }}InstPrinter::printRegName(
+  raw_ostream &O, MCRegister Reg
+) const
+{
   markup(O, Markup::Register) << getRegisterName(Reg);
 }
 
-void {{ namespace }}InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                    raw_ostream &O,
-                                    const char *Modifier) {
+void
+{{ namespace }}InstPrinter::printOperand(
+  const MCInst *MI, unsigned OpNo,
+  raw_ostream &O,
+  const char *Modifier
+)
+{
   assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
   const MCOperand &MO = MI->getOperand(OpNo);
 
@@ -64,3 +80,31 @@ void {{ namespace }}InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   assert(MO.isExpr() && "Unknown operand kind in printOperand");
   MO.getExpr()->print(O, &MAI);
 }
+
+{% for asmopcls in asm_operand_clss -%}
+void
+{{ namespace }}InstPrinter::print{{ asmopcls.name }}(
+  const MCInst *MI,
+  unsigned OpNo,
+  raw_ostream &O
+)
+{
+  const MCOperand &MO = MI->getOperand(OpNo);
+
+  if (MO.isImm()) {
+    uint64_t imm = MO.getImm();
+    switch (imm) {
+    default:
+      break;
+    {% for k, v in asmopcls.enums.items() -%}
+      case {{ k }}:
+        markup(O, Markup::Immediate) << "{{ v }}";
+        return;
+    {% endfor -%}
+    }
+  }
+
+  assert(MO.isExpr() && "Unknown operand kind in print{{ asmopcls.name }}");
+  MO.getExpr()->print(O, &MAI);
+}
+{% endfor %}

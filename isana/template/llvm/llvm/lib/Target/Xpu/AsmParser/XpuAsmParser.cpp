@@ -54,6 +54,9 @@ class {{ namespace }}AsmParser : public MCTargetAsmParser {
   ParseStatus parseImmediate(OperandVector &Operands);
   ParseStatus parseMemOpBaseReg(OperandVector &Operands);
   ParseStatus parseRegister(OperandVector &Operands);
+  {% for asmopcls in asm_operand_clss -%}
+  ParseStatus parse{{ asmopcls.name }}AsmOp(OperandVector &Operands);
+  {% endfor -%}
   bool parseOperand(OperandVector &Operands, StringRef Mnemonic);
 
 public:
@@ -357,15 +360,46 @@ ParseStatus {{ namespace }}AsmParser::parseMemOpBaseReg(OperandVector &Operands)
   return ParseStatus::Success;
 }
 
+{% for asmopcls in asm_operand_clss -%}
+ParseStatus {{ namespace }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVector &Operands) {
+  SMLoc S = getLoc();
+  SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+
+  switch (getLexer().getKind()) {
+  default:
+    return ParseStatus::NoMatch;
+  case AsmToken::Identifier:
+    StringRef Name = getLexer().getTok().getIdentifier();
+    int64_t ImmVal = StringSwitch<int64_t>(Name)
+      {% for k, v in asmopcls.enums.items() -%}
+      .Case("{{ v }}", {{ k }})
+      {% endfor -%}
+      .Default(-1);
+
+    if (ImmVal == -1)
+      return ParseStatus::NoMatch;
+
+    getLexer().Lex();
+    Operands.push_back({{ namespace }}Operand::createImm(
+      MCConstantExpr::create(ImmVal, getContext()), S, E)
+    );
+    break;
+  }
+  return ParseStatus::Success;
+}
+{% endfor %}
+
 bool {{ namespace }}AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
   // Check if the current operand has a custom associated parser, if so, try to
   // custom parse the operand, or fallback to the general approach.
-  // ParseStatus Result =
-  //     MatchOperandParserImpl(Operands, Mnemonic, /*ParseForAllFeatures=*/true);
-  // if (Result.isSuccess())
-  //   return false;
-  // if (Result.isFailure())
-  //   return true;
+{% if asm_operand_clss|length == 0 %}#if 0 // no custom parser{% endif %}
+  ParseStatus Result =
+      MatchOperandParserImpl(Operands, Mnemonic, /*ParseForAllFeatures=*/true);
+  if (Result.isSuccess())
+    return false;
+  if (Result.isFailure())
+    return true;
+{% if asm_operand_clss|length == 0 %}#endif{% endif %}
 
   // Attempt to parse token as a register.
   if (parseRegister(Operands).isSuccess())
@@ -383,7 +417,6 @@ bool {{ namespace }}AsmParser::parseOperand(OperandVector &Operands, StringRef M
   Error(getLoc(), "unknown operand");
   return true;
 }
-
 
 /// ParseInstruction - Parse an {{ namespace }} instruction which is in {{ namespace }} verifier
 /// format. Return true if failure.
