@@ -6,8 +6,8 @@ authors = ["nakandev <nakandev.s@gmail.com>"]
 readme = "README.md"
 packages = [
     { include = "isana" },
-    { include = "kodama" },
-    { include = "penguin" },
+    { include = "okojo" },
+    { include = "uguisu" },
 ]
 
 [tool.poetry.dependencies]

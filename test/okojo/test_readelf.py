@@ -1,4 +1,4 @@
-from kodama.elf import ElfObject
+from okojo.elf import ElfObject
 import os
 
 

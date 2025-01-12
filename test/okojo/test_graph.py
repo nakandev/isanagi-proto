@@ -1,5 +1,5 @@
 import os
-from penguin.graph import TextNode, Edge, Graph
+from uguisu.graph import TextNode, Edge, Graph
 
 
 def main():

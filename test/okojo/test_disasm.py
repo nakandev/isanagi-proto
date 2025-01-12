@@ -1,5 +1,5 @@
-from kodama.elf import ElfObject
-from kodama.disasm import DisassemblyObject
+from okojo.elf import ElfObject
+from okojo.disasm import DisassemblyObject
 from isana.model.riscv.python.isa import isa
 import os
 
