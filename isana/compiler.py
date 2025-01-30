@@ -5,6 +5,7 @@ from isana.semantic import (
     may_change_pc_absolute,
     may_change_pc_relative,
     may_take_memory_address,
+    get_alu_dag,
 )
 
 
@@ -209,6 +210,19 @@ def auto_make_relocations(isa):
     return fixups
 
 
+def get_instr_pattern(instr):
+    if ret := get_alu_dag(instr.semantic):
+        (op, (dst_name, dst_tp), (l_name, l_tp), (r_name, r_tp)) = ret
+        s = "[(set {}, ({} {}, {}))]".format(
+            "{}:${}".format(dst_tp, dst_name),
+            op,  # get_basic_operator(instr.opn)
+            "{}:${}".format(l_tp, l_name),
+            "{}:${}".format(r_tp, r_name),
+        )
+        return s
+    return "[]"
+
+
 class LLVMCompiler():
     namespace = _default_namespace
     triple = tuple(_default_triple)
@@ -399,7 +413,7 @@ class LLVMCompiler():
                     asmstrs += [ast]
             instr_def.asmstr = '"{}"'.format(''.join(asmstrs))
 
-            instr_def.pattern = "[]"
+            instr_def.pattern = get_instr_pattern(instr)
 
             params = []
             # params.append("  let DecoderNamespace = \"{}\";".format(
