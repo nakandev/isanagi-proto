@@ -62,6 +62,7 @@ class OperandType(KwargsClass):
     keys = (
         'varname',
         'basecls',
+        'cond',
     )
 
 class InstrDefs(KwargsClass):
@@ -291,6 +292,29 @@ class LLVMCompiler():
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
+    def gen_callingconv_td(self):
+        callee_saved_regs = []
+        arg_regs = []
+        ret_regs = []
+        gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
+        if gpr:
+            regs = list(filter(lambda r: r.is_callee_saved, gpr.regs))
+            callee_saved_regs = ', '.join([r.label.upper() for r in regs])
+            regs = list(filter(lambda r: r.is_arg, gpr.regs))
+            arg_regs = ', '.join([r.label.upper() for r in regs])
+            regs = list(filter(lambda r: r.is_ret, gpr.regs))
+            ret_regs = ', '.join([r.label.upper() for r in regs])
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "CallingConv.td"
+        kwargs = {
+            "namespace": self.namespace,
+            "callee_saved_regs": callee_saved_regs,
+            "arg_regs": arg_regs,
+            "ret_regs": ret_regs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
     def gen_registerinfo_td(self):
         reg_base_tables = {}
         for reggroup in self.isa.registers:
@@ -347,6 +371,39 @@ class LLVMCompiler():
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
+    def gen_registerinfo_cpp(self):
+        reserved_regs = []
+        gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
+        reg0 = None
+        fp = None
+        if gpr:
+            reg0 = gpr.regs[0].label.upper()
+            for reg in gpr.regs:
+                if any([
+                    reg.is_zero, reg.is_return_address, reg.is_stack_pointer, reg.is_global_pointer,
+                ]):
+                    reserved_regs.append(reg.label.upper())
+                if fp is None and (reg.is_stack_pointer):
+                    fp = reg.label.upper()
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "RegisterInfo.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "reserved_regs": reserved_regs,
+            "reg0": reg0,
+            "fp": fp,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_registerinfo_h(self):
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "RegisterInfo.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
     def gen_instrinfo_td(self):
         asm_operand_clss = []
         operand_clss = []
@@ -363,20 +420,23 @@ class LLVMCompiler():
                 )
                 asm_operand_clss.append(asm_operand_cls)
                 operand_cls.asm_operand_cls = asm_operand_cls
+                operand_cls.imm_leaf = None
             else:
                 operand_cls.asm_operand_cls = None
+                cond = "return ({minv} <= (Imm>>{shift})) && ((Imm>>{shift}) <= {maxv});".format(
+                    shift=imm.offset,
+                    minv=-int(pow(2, imm.width)),
+                    maxv=int(pow(2, imm.width) - 1),
+                )
+                operand_cls.imm_leaf = OperandType(
+                    varname=imm.label + "Tp",
+                    basecls="i32",
+                    cond=cond,
+                )
             operand_clss.append(operand_cls)
-            operand_types.append(OperandType(
-                varname=imm.label + "Tp",
-                basecls="i32",
-            ))
         for mem in self.isa.memories:
             operand_clss.append(OperandCls(
                 varname=mem.label,
-                basecls="i32",
-            ))
-            operand_types.append(OperandType(
-                varname=mem.label + "Tp",
                 basecls="i32",
             ))
 
@@ -533,6 +593,50 @@ class LLVMCompiler():
             "operand_clss": operand_clss,
             "operand_types": operand_types,
             "instr_defs": instr_defs,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_instrinfo_cpp(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "InstrInfo.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            # "asm_operand_clss": asm_operand_clss,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_instrinfo_h(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "InstrInfo.h"
+        kwargs = {
+            "namespace": self.namespace,
+            # "asm_operand_clss": asm_operand_clss,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_isellowering_cpp(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "ISelLowering.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            # "asm_operand_clss": asm_operand_clss,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_isellowering_h(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "ISelLowering.h"
+        kwargs = {
+            "namespace": self.namespace,
+            # "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -759,5 +863,12 @@ class LLVMCompiler():
         self.gen_asmparser_dir()
         self.gen_disassembler_dir()
         self.gen_mctargetdesc_dir()
-        self.gen_registerinfo_td()
+        self.gen_callingconv_td()
+        self.gen_instrinfo_cpp()
+        self.gen_instrinfo_h()
         self.gen_instrinfo_td()
+        self.gen_isellowering_cpp()
+        self.gen_isellowering_h()
+        self.gen_registerinfo_td()
+        self.gen_registerinfo_cpp()
+        self.gen_registerinfo_h()

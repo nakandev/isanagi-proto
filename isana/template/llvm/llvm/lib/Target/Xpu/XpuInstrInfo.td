@@ -15,14 +15,11 @@ def {{ opcls.varname }}: Operand<{{ opcls.basecls }}> {
   let ParserMatchClass = {{ opcls.asm_operand_cls.name }}AsmOp;
   let PrintMethod = "print{{ opcls.asm_operand_cls.name }}";
 }
+{% elif opcls.imm_leaf -%}
+def {{ opcls.varname }}: Operand<{{ opcls.basecls }}>, ImmLeaf<{{ opcls.basecls }}, [{ {{ opcls.imm_leaf.cond }} }]>;
 {% else -%}
 def {{ opcls.varname }}: Operand<{{ opcls.basecls }}>;
 {% endif -%}
-{% endfor %}
-
-//=== OperandTypes
-{% for optp in operand_types -%}
-def {{ optp.varname }} : IntImmLeaf<{{ optp.basecls }}, [{return Imm == (Imm & 0xff);}]>;
 {% endfor %}
 
 //=== Instruction Classes
@@ -68,3 +65,21 @@ def PseudoRET: {{ namespace }}Inst<
   let isReturn = 1;
   let isTerminator = 1;
 }
+
+
+//== Gen Imm Pattern
+// [TODO] auto generate from instruction semantics
+def LO12S: SDNodeXForm<imm, [{
+  return CurDAG->getTargetConstant(
+    SignExtend64<12>(N->getZExtValue()),
+    SDLoc(N),
+    N->getValueType(0)
+  );
+}]>;
+def HI20: SDNodeXForm<imm, [{
+  return getImm(N, ((N->getZExtValue()+0x800) >> 12) & 0xfffff);
+}]>;
+
+def : Pat<(ImmS12:$in), (ADDI X0, ImmS12:$in)>;
+def : Pat<(ImmHi20:$in), (LUI (HI20 imm:$in))>;
+def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;

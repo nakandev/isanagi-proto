@@ -273,8 +273,12 @@ class Register():
         self.aliases = args
         self.is_callee_saved = kwargs.get('callee', False)
         self.is_caller_saved = kwargs.get('caller', False)
-        self.is_stack_pointer = kwargs.get('stackpointer', False)
-        self.is_global_pointer = kwargs.get('globalpointer', False)
+        self.is_zero = kwargs.get('zero', False)
+        self.is_arg = kwargs.get('arg', False)
+        self.is_ret = kwargs.get('ret', False)
+        self.is_return_address = kwargs.get('ra', False)
+        self.is_stack_pointer = kwargs.get('sp', False)
+        self.is_global_pointer = kwargs.get('gp', False)
         self.idx = kwargs.get('idx', number)
         self.dwarf_number = kwargs.get('dwarf_number', number)
         self.value = 0
@@ -311,6 +315,7 @@ class Immediate():
     def __init__(self, label: str, **kwargs):
         self.label = label
         self.width = kwargs.get('width')
+        self.offset = kwargs.get('offset', 0)
         self.enums = kwargs.get('enums', None)
 
     def cast(self, value):

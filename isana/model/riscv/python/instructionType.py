@@ -43,7 +43,7 @@ class InstrILoad(InstrI):
 
 
 class InstrS(Instruction):
-    prm = parameter("rs2:GPR", "rs1:GPR, imm:ImmS12")
+    prm = parameter("", "rs2:GPR, rs1:GPR, imm:ImmS12")
     asm = assembly("$opn $rs2, $imm ($rs1)")
     bin = binary("$imm[11:5], $rs2[4:0], $rs1[4:0], $opc[14:12], $imm[4:0], $opc[6:0]")
 
