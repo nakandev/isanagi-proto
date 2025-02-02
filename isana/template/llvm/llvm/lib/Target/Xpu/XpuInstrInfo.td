@@ -83,3 +83,52 @@ def HI20: SDNodeXForm<imm, [{
 def : Pat<(ImmS12:$in), (ADDI X0, ImmS12:$in)>;
 def : Pat<(ImmHi20:$in), (LUI (HI20 imm:$in))>;
 def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;
+
+
+//== Gen Load/Store Pattern
+class AlignedLoad<PatFrag Node>: PatFrag<(ops node:$ptr), (Node node:$ptr), [{
+  LoadSDNode *LD = cast<LoadSDNode>(N);
+  return LD->getMemoryVT().getSizeInBits()/8 <= LD->getAlignment();
+}]>;
+class AlignedStore<PatFrag Node>: PatFrag<(ops node:$val, node:$ptr), (Node node:$val, node:$ptr), [{
+  StoreSDNode *SD = cast<StoreSDNode>(N);
+  return SD->getMemoryVT().getSizeInBits()/8 <= SD->getAlignment();
+}]>;
+
+def load_a         : AlignedLoad<load       >;
+def sextloadi8_a   : AlignedLoad<sextloadi8 >;
+def zextloadi8_a   : AlignedLoad<zextloadi8 >;
+def sextloadi16_a  : AlignedLoad<sextloadi16>;
+def zextloadi16_a  : AlignedLoad<zextloadi16>;
+def  extloadi16_a  : AlignedLoad< extloadi16>;
+def sextloadi32_a  : AlignedLoad<sextloadi32>;
+def zextloadi32_a  : AlignedLoad<zextloadi32>;
+def  extloadi32_a  : AlignedLoad< extloadi32>;
+def store_a         : AlignedStore<store        >;
+def truncstorei8_a  : AlignedStore<truncstorei8 >;
+def truncstorei16_a : AlignedStore<truncstorei16>;
+def truncstorei32_a : AlignedStore<truncstorei32>;
+
+multiclass LoadPattern<PatFrag LoadOp, {{ namespace }}Inst Inst> {
+  def : Pat<(LoadOp GPR:$rs1    ), (Inst GPR:$rs1    , 0)>;
+  //def : Pat<(LoadOp addr_fi:$rs1), (Inst addr_fi:$rs1, 0)>;
+  def : Pat<(LoadOp (add GPR:$rs1    , ImmS12:$imm)), (Inst GPR:$rs1    , ImmS12:$imm)>;
+  //def : Pat<(LoadOp (add addr_fi:$rs1, ImmS12:$imm)), (Inst addr_fi:$rs1, ImmS12:$imm)>;
+}
+multiclass StorePattern<PatFrag StoreOp, {{ namespace }}Inst Inst, RegisterClass RC> {
+  def : Pat<(StoreOp RC:$rs2, GPR:$rs1    ), (Inst RC:$rs2, GPR:$rs1    , 0)>;
+  //def : Pat<(StoreOp RC:$rs2, addr_fi:$rs1), (Inst RC:$rs2, addr_fi:$rs1, 0)>;
+  def : Pat<(StoreOp RC:$rs2, (add GPR:$rs1    , ImmS12:$imm)), (Inst RC:$rs2, GPR:$rs1    , ImmS12:$imm)>;
+  //def : Pat<(StoreOp RC:$rs2, (add addr_fi:$rs1, ImmS12:$imm)), (Inst RC:$rs2, addr_fi:$rs1, ImmS12:$imm)>;
+}
+
+defm : LoadPattern<sextloadi8 , LB>;
+defm : LoadPattern< extloadi8 , LB>;
+defm : LoadPattern<sextloadi16, LH>;
+defm : LoadPattern< extloadi16, LH>;
+defm : LoadPattern<load       , LW>;
+defm : LoadPattern<zextloadi8 , LBU>;
+defm : LoadPattern<zextloadi16, LHU>;
+defm : StorePattern<truncstorei8 , SB, GPR>;
+defm : StorePattern<truncstorei16, SH, GPR>;
+defm : StorePattern<store        , SW, GPR>;
