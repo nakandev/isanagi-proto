@@ -67,7 +67,7 @@ def PseudoRET: {{ namespace }}Inst<
 }
 
 
-//== Gen Imm Pattern
+//== Generate Immediate Pattern
 // [TODO] auto generate from instruction semantics
 def LO12S: SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant(
@@ -85,7 +85,7 @@ def : Pat<(ImmHi20:$in), (LUI (HI20 imm:$in))>;
 def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;
 
 
-//== Gen Load/Store Pattern
+//== Load/Store Pattern
 class AlignedLoad<PatFrag Node>: PatFrag<(ops node:$ptr), (Node node:$ptr), [{
   LoadSDNode *LD = cast<LoadSDNode>(N);
   return LD->getMemoryVT().getSizeInBits()/8 <= LD->getAlignment();
@@ -109,26 +109,26 @@ def truncstorei8_a  : AlignedStore<truncstorei8 >;
 def truncstorei16_a : AlignedStore<truncstorei16>;
 def truncstorei32_a : AlignedStore<truncstorei32>;
 
-multiclass LoadPattern<PatFrag LoadOp, {{ namespace }}Inst Inst> {
-  def : Pat<(LoadOp GPR:$rs1    ), (Inst GPR:$rs1    , 0)>;
-  //def : Pat<(LoadOp addr_fi:$rs1), (Inst addr_fi:$rs1, 0)>;
-  def : Pat<(LoadOp (add GPR:$rs1    , ImmS12:$imm)), (Inst GPR:$rs1    , ImmS12:$imm)>;
-  //def : Pat<(LoadOp (add addr_fi:$rs1, ImmS12:$imm)), (Inst addr_fi:$rs1, ImmS12:$imm)>;
-}
-multiclass StorePattern<PatFrag StoreOp, {{ namespace }}Inst Inst, RegisterClass RC> {
-  def : Pat<(StoreOp RC:$rs2, GPR:$rs1    ), (Inst RC:$rs2, GPR:$rs1    , 0)>;
-  //def : Pat<(StoreOp RC:$rs2, addr_fi:$rs1), (Inst RC:$rs2, addr_fi:$rs1, 0)>;
-  def : Pat<(StoreOp RC:$rs2, (add GPR:$rs1    , ImmS12:$imm)), (Inst RC:$rs2, GPR:$rs1    , ImmS12:$imm)>;
-  //def : Pat<(StoreOp RC:$rs2, (add addr_fi:$rs1, ImmS12:$imm)), (Inst RC:$rs2, addr_fi:$rs1, ImmS12:$imm)>;
-}
+def FIAddr : ComplexPattern<iPTR, 2, "SelectAddrFrameIndexRegImm", [frameindex, add], []>;
+def : Pat<(FIAddr (iPTR GPR:$rs1), Imm:$imm),
+          (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm)))>;
 
-defm : LoadPattern<sextloadi8 , LB>;
-defm : LoadPattern< extloadi8 , LB>;
-defm : LoadPattern<sextloadi16, LH>;
-defm : LoadPattern< extloadi16, LH>;
-defm : LoadPattern<load       , LW>;
-defm : LoadPattern<zextloadi8 , LBU>;
-defm : LoadPattern<zextloadi16, LHU>;
-defm : StorePattern<truncstorei8 , SB, GPR>;
-defm : StorePattern<truncstorei16, SH, GPR>;
-defm : StorePattern<store        , SW, GPR>;
+def AddrReg      : ComplexPattern<iPTR, 2, "SelectAddrRegImm", [], []>;
+
+class LoadPattern<PatFrag LoadOp, {{ namespace }}Inst Inst> :
+  Pat<(LoadOp (AddrReg GPR:$rs1, Imm:$imm)),
+      (Inst (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
+class StorePattern<PatFrag StoreOp, {{ namespace }}Inst Inst, RegisterClass RC> :
+  Pat<(StoreOp RC:$rs2, (AddrReg GPR:$rs1, Imm:$imm)),
+      (Inst RC:$rs2, (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
+
+def : LoadPattern<sextloadi8 , LB>;
+def : LoadPattern< extloadi8 , LB>;
+def : LoadPattern<sextloadi16, LH>;
+def : LoadPattern< extloadi16, LH>;
+def : LoadPattern<load       , LW>;
+def : LoadPattern<zextloadi8 , LBU>;
+def : LoadPattern<zextloadi16, LHU>;
+def : StorePattern<truncstorei8 , SB, GPR>;
+def : StorePattern<truncstorei16, SH, GPR>;
+def : StorePattern<store        , SW, GPR>;

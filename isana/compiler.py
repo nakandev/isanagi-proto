@@ -6,6 +6,9 @@ from isana.semantic import (
     may_change_pc_relative,
     may_take_memory_address,
     get_alu_dag,
+    get_alui_dag,
+    get_cmp_dag,
+    get_cmpi_dag,
 )
 
 
@@ -94,9 +97,9 @@ instr_attr_table = {
     # '': "isAdd",
     # '': "isTrap",
     'is_load': "mayLoad",
-    'is_push': "mayLoad",
+    'is_pop': "mayLoad",
     'is_store': "mayStore",
-    'is_pop': "mayStore",
+    'is_push': "mayStore",
     # '': "isTerminator",
 }
 
@@ -221,6 +224,19 @@ def get_instr_pattern(instr):
             "{}:${}".format(r_tp, r_name),
         )
         return s
+    elif ret := get_alui_dag(instr.semantic):
+        s = "[(set {}, ({} {}, {}))]".format(
+            "{}:${}".format(dst_tp, dst_name),
+            op,  # get_basic_operator(instr.opn)
+            "{}:${}".format(l_tp, l_name),
+            "{}:${}".format(r_tp, r_name),
+        )
+        return s
+        pass
+    elif ret := get_cmp_dag(instr.semantic):
+        pass
+    elif ret := get_cmpi_dag(instr.semantic):
+        pass
     return "[]"
 
 
@@ -375,6 +391,7 @@ class LLVMCompiler():
         reserved_regs = []
         gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
         reg0 = None
+        sp = None
         fp = None
         if gpr:
             reg0 = gpr.regs[0].label.upper()
@@ -383,7 +400,9 @@ class LLVMCompiler():
                     reg.is_zero, reg.is_return_address, reg.is_stack_pointer, reg.is_global_pointer,
                 ]):
                     reserved_regs.append(reg.label.upper())
-                if fp is None and (reg.is_stack_pointer):
+                if sp is None and (reg.is_stack_pointer):
+                    sp = reg.label.upper()
+                if fp is None and (reg.is_frame_pointer):
                     fp = reg.label.upper()
 
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
@@ -392,6 +411,7 @@ class LLVMCompiler():
             "namespace": self.namespace,
             "reserved_regs": reserved_regs,
             "reg0": reg0,
+            "sp": sp,
             "fp": fp,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -571,11 +591,17 @@ class LLVMCompiler():
             instr_def.bit_insts = "\n".join(bit_instrs)
 
             attrs = []
+            instr_attrs = [f for f in dir(instr)]
             for k, v in instr_attr_table.items():
                 # if not hasattr(instr, k):
-                if k not in instr.__dict__:
+                if k not in instr_attrs:
                     continue
-                if getattr(instr, k) is True:
+                try:
+                    cond = getattr(instr, k) is True
+                except Exception:
+                    # if instr_attr is a method, set attr forcely as trial.
+                    cond = True
+                if cond:
                     if isinstance(v, str):
                         v = [v]
                     attrs += v
@@ -603,7 +629,6 @@ class LLVMCompiler():
         fname = "Xpu", "InstrInfo.cpp"
         kwargs = {
             "namespace": self.namespace,
-            # "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -614,7 +639,33 @@ class LLVMCompiler():
         fname = "Xpu", "InstrInfo.h"
         kwargs = {
             "namespace": self.namespace,
-            # "asm_operand_clss": asm_operand_clss,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_framelowering_cpp(self):
+        pass
+        gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
+        sp = None
+        if gpr:
+            for reg in gpr.regs:
+                if sp is None and (reg.is_stack_pointer):
+                    sp = reg.label.upper()
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "FrameLowering.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+            "sp": sp,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_framelowering_h(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "FrameLowering.h"
+        kwargs = {
+            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -637,6 +688,26 @@ class LLVMCompiler():
         kwargs = {
             "namespace": self.namespace,
             # "asm_operand_clss": asm_operand_clss,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_iseldagtodag_cpp(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "ISelDAGToDAG.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_iseldagtodag_h(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "ISelDAGToDAG.h"
+        kwargs = {
+            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -864,9 +935,13 @@ class LLVMCompiler():
         self.gen_disassembler_dir()
         self.gen_mctargetdesc_dir()
         self.gen_callingconv_td()
+        self.gen_framelowering_cpp()
+        self.gen_framelowering_h()
         self.gen_instrinfo_cpp()
         self.gen_instrinfo_h()
         self.gen_instrinfo_td()
+        self.gen_iseldagtodag_cpp()
+        self.gen_iseldagtodag_h()
         self.gen_isellowering_cpp()
         self.gen_isellowering_h()
         self.gen_registerinfo_td()

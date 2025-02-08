@@ -22,7 +22,7 @@ GPR_regs = (
     GPRReg(5, "x5", "t0", caller=True),
     GPRReg(6, "x6", "t1", caller=True),
     GPRReg(7, "x7", "t2", caller=True),
-    GPRReg(8, "x8", "s0", "fp", callee=True),
+    GPRReg(8, "x8", "s0", "fp", callee=True, fp=True),
     GPRReg(9, "x9", "s1", callee=True),
     GPRReg(10, "x10", "a0", caller=True, arg=True, ret=True),
     GPRReg(11, "x11", "a1", caller=True, arg=True, ret=True),

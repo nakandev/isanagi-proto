@@ -5,7 +5,7 @@ from isana.isa import Context
 
 from .memory import Mem
 from .register import PCR, GPR, GPRC, FPR, CSR
-from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmHi20, ImmS6, ImmS9, RMImm
+from .datatype import Imm, ImmS12, ImmS13, ImmS21, ImmS20O12, ImmS6, ImmS9, RMImm
 from .instruction import instructions
 
 from .compiler import compiler
@@ -48,7 +48,7 @@ isa = RiscvISA(
         ImmS12,
         ImmS13,
         ImmS21,
-        ImmHi20,
+        ImmS20O12,
         ImmS6,
         ImmS9,
         RMImm,

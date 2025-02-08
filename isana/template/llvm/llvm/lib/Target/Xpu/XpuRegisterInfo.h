@@ -21,11 +21,19 @@ struct {{ namespace }}RegisterInfo : public {{ namespace }}GenRegisterInfo {
 
   BitVector getReservedRegs(const MachineFunction &MF) const override;
 
-  bool eliminateFrameIndex(MachineBasicBlock::iterator MI, int SPAdj,
+  bool eliminateFrameIndex(MachineBasicBlock::iterator MBBI, int SPAdj,
                            unsigned FIOperandNum,
                            RegScavenger *RS = nullptr) const override;
 
   Register getFrameRegister(const MachineFunction &MF) const override;
+
+  bool requiresRegisterScavenging(const MachineFunction &MF) const override {
+    return true;
+  }
+
+  bool requiresFrameIndexScavenging(const MachineFunction &MF) const override {
+    return true;
+  }
 };
 } // namespace llvm
 

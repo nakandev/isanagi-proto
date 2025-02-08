@@ -1,4 +1,4 @@
-//===-- {{ namespace }}InstrInfo.h - {{ namespace }} Instruction Information ------------*- C++ -*-===//
+//===-- {{ namespace }}InstrInfo.h - {{ namespace }} Instruction Information -*- C++ -*-===//
 
 #ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}INSTRINFO_H
 #define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}INSTRINFO_H
@@ -16,6 +16,10 @@ public:
   {{ namespace }}InstrInfo();
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
+
+  void addImmediate(Register DstReg, Register SrcReg, int64_t Amount,
+                    MachineBasicBlock &MBB,
+                    MachineBasicBlock::iterator I) const;
 
 private:
   void expandPseudoRET(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;

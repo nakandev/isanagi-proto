@@ -55,7 +55,7 @@ class InstrB(Instruction):
 
 
 class InstrU(Instruction):
-    prm = parameter("rd:GPR", "imm:Imm")
+    prm = parameter("rd:GPR", "imm:ImmS20O12")
     asm = assembly("$opn $rd, $imm")
     bin = binary("$imm[31:12], $rd[4:0], $opc[6:0]")
 
