@@ -2,6 +2,7 @@
 
 #include "{{ namespace }}InstrInfo.h"
 #include "{{ namespace }}.h"
+#include "{{ namespace }}Subtarget.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
@@ -15,8 +16,9 @@
 
 using namespace llvm;
 
-{{ namespace }}InstrInfo::{{ namespace }}InstrInfo()
-    : {{ namespace }}GenInstrInfo(/*{{ namespace }}::ADJCALLSTACKDOWN, {{ namespace }}::ADJCALLSTACKUP*/) {}
+{{ namespace }}InstrInfo::{{ namespace }}InstrInfo({{ namespace }}Subtarget &STI)
+    : {{ namespace }}GenInstrInfo(/*{{ namespace }}::ADJCALLSTACKDOWN, {{ namespace }}::ADJCALLSTACKUP*/),
+      STI(STI) {}
 
 bool
 {{ namespace }}InstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
@@ -74,5 +76,27 @@ void
     BuildMI(MBB, MBBI, DL, get({{ namespace }}::ADD), DstReg)
       .addReg(SrcReg)
       .addReg(ImmReg, RegState::Kill);
+  }
+}
+
+void
+{{ namespace }}InstrInfo::copyPhysReg(
+  MachineBasicBlock &MBB,
+  MachineBasicBlock::iterator MBBI,
+  const DebugLoc &DL,
+  MCRegister DstReg,
+  MCRegister SrcReg,
+  bool KillSrc,
+  bool RenamableDest,
+  bool RenamableSrc
+) const {
+  const TargetRegisterInfo *TRI = STI.getRegisterInfo();
+
+  if ({{ namespace }}::GPRRegClass.contains(DstReg, SrcReg)) {
+    BuildMI(MBB, MBBI, DL, get({{ namespace }}::ADDI), DstReg)
+        .addReg(SrcReg,
+                getKillRegState(KillSrc) | getRenamableRegState(RenamableSrc))
+        .addImm(0);
+    return;
   }
 }

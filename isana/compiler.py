@@ -711,6 +711,26 @@ class LLVMCompiler():
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
+    def gen_subtarget_cpp(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "Subtarget.cpp"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
+    def gen_subtarget_h(self):
+        pass
+
+        fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
+        fname = "Xpu", "Subtarget.h"
+        kwargs = {
+            "namespace": self.namespace,
+        }
+        self._read_template_and_write(fdirs, fname, kwargs)
+
     def gen_asmbackend_h(self):
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "AsmBackend.h"
@@ -947,3 +967,5 @@ class LLVMCompiler():
         self.gen_registerinfo_td()
         self.gen_registerinfo_cpp()
         self.gen_registerinfo_h()
+        self.gen_subtarget_cpp()
+        self.gen_subtarget_h()
