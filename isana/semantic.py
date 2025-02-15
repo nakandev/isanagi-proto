@@ -3,8 +3,7 @@ import inspect
 from textwrap import dedent
 
 
-op_table = {
-    # BinOp
+op_alu_table = {
     ast.Add: "add",
     ast.Sub: "sub",
     ast.Mult: "mul",
@@ -15,8 +14,29 @@ op_table = {
     ast.BitAnd: "and",
     ast.BitOr: "or",
     ast.BitXor: "xor",
-    # Compare
-    # ast.Eq: "",
+}
+
+
+op_aluu_table = {
+    ast.FloorDiv: "udiv",
+    ast.Mod: "urem",
+    ast.RShift: "srl",
+}
+
+op_cmp_table = {
+    ast.Eq: "seteq",
+    ast.NotEq: "setne",
+    ast.Gt: "setgt",
+    ast.Lt: "setlt",
+    ast.GtE: "setge",
+    ast.LtE: "setle",
+}
+
+op_cmpu_table = {
+    ast.Gt: "setugt",
+    ast.Lt: "setult",
+    ast.GtE: "setuge",
+    ast.LtE: "setule",
 }
 
 
@@ -96,6 +116,7 @@ def may_take_memory_address(semantic):
 
 
 def get_alu_dag(semantic):
+    alu_category = "alu"
     code = inspect.getsource(semantic)
     code = dedent(code)
     # print(ast.dump(ast.parse(code), indent=4))
@@ -111,36 +132,71 @@ def get_alu_dag(semantic):
     dst_tp = dsts[0].value.attr
     dst_name = dsts[0].slice.attr
     # check if rhs 'Reg[reg_no] op Reg[reg_no]'
-    if not isinstance(body_root[0].value, (ast.BinOp, ast.Compare)):
-        return None
     if isinstance(body_root[0].value, ast.BinOp):
+        alu_category = "alu"
+        op_check_table = op_alu_table
         op = body_root[0].value.op
-        lhs_l = body_root[0].value.left
-        lhs_r = body_root[0].value.right
+        rhs_l = body_root[0].value.left
+        rhs_r = body_root[0].value.right
     elif isinstance(body_root[0].value, ast.Compare):
+        alu_category = "cmp"
+        op_check_table = op_cmp_table
         op = body_root[0].value.ops[0]
-        lhs_l = body_root[0].value.left
-        lhs_r = body_root[0].value.comparators[0]
-    # -- check op
-    if type(op) in op_table.keys():
-        dag_op = op_table[type(op)]
+        rhs_l = body_root[0].value.left
+        rhs_r = body_root[0].value.comparators[0]
     else:
-        dag_op = None
         return None
-    # print(dag_op or type(op))
-    # -- check lhs_l
-    if not isinstance(lhs_l, ast.Subscript):
+    # -- check unsigned
+    unsigned_l, unsigned_r = False, False
+    if isinstance(rhs_l, ast.Call):
+        f_name = rhs_l.func.id
+        # f_arg0 = rhs_l.args[0].id
+        f_arg1 = rhs_l.args[1]
+        if f_name != "unsigned":
+            return None
+        unsigned_l = True
+        rhs_l = f_arg1
+    if isinstance(rhs_r, ast.Call):
+        f_name = rhs_r.func.id
+        # f_arg0 = rhs_r.args[0].id
+        f_arg1 = rhs_r.args[1]
+        if f_name != "unsigned":
+            return None
+        unsigned_r = True
+        rhs_r = f_arg1
+    if unsigned_l or unsigned_r:
+        if alu_category == "alu":
+            op_check_table = op_aluu_table
+        elif alu_category == "cmp":
+            op_check_table = op_cmpu_table
+    # -- check op
+    if type(op) in op_check_table.keys():
+        dag_op = op_check_table[type(op)]
+    else:
         return None
-    lhs_l_tp = lhs_l.value.attr
-    lhs_l_name = lhs_l.slice.attr
-    # -- check lhs_r
-    if not isinstance(lhs_r, ast.Subscript):
+    # print("#dag_op", dag_op or type(op))
+    # -- check rhs_l
+    if isinstance(rhs_l, ast.Subscript):
+        rhs_l_tp = rhs_l.value.attr
+        rhs_l_name = rhs_l.slice.attr
+    else:
         return None
-    lhs_r_tp = lhs_r.value.attr
-    lhs_r_name = lhs_r.slice.attr
+    # -- check rhs_r
+    if isinstance(rhs_r, ast.Subscript):
+        rhs_r_tp = rhs_r.value.attr
+        rhs_r_name = rhs_r.slice.attr
+    elif isinstance(rhs_r, ast.Attribute):
+        rhs_r_tp = "UnknownImm"
+        rhs_r_name = rhs_r.attr
+    else:
+        return None
     return (
         dag_op,
         (dst_name, dst_tp),
-        (lhs_l_name, lhs_l_tp),
-        (lhs_r_name, lhs_r_tp),
+        (rhs_l_name, rhs_l_tp, unsigned_l),
+        (rhs_r_name, rhs_r_tp, unsigned_r),
     )
+
+
+def estimate_load_immediate_ops(instructions):
+    pass

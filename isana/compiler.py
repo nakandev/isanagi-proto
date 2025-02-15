@@ -6,9 +6,6 @@ from isana.semantic import (
     may_change_pc_relative,
     may_take_memory_address,
     get_alu_dag,
-    get_alui_dag,
-    get_cmp_dag,
-    get_cmpi_dag,
 )
 
 
@@ -216,7 +213,9 @@ def auto_make_relocations(isa):
 
 def get_instr_pattern(instr):
     if ret := get_alu_dag(instr.semantic):
-        (op, (dst_name, dst_tp), (l_name, l_tp), (r_name, r_tp)) = ret
+        (op, (dst_name, dst_tp), (l_name, l_tp, l_u), (r_name, r_tp, r_u)) = ret
+        if r_tp == "UnknownImm":
+            r_tp = instr.params.inputs[r_name].type_
         s = "[(set {}, ({} {}, {}))]".format(
             "{}:${}".format(dst_tp, dst_name),
             op,  # get_basic_operator(instr.opn)
@@ -224,19 +223,6 @@ def get_instr_pattern(instr):
             "{}:${}".format(r_tp, r_name),
         )
         return s
-    elif ret := get_alui_dag(instr.semantic):
-        s = "[(set {}, ({} {}, {}))]".format(
-            "{}:${}".format(dst_tp, dst_name),
-            op,  # get_basic_operator(instr.opn)
-            "{}:${}".format(l_tp, l_name),
-            "{}:${}".format(r_tp, r_name),
-        )
-        return s
-        pass
-    elif ret := get_cmp_dag(instr.semantic):
-        pass
-    elif ret := get_cmpi_dag(instr.semantic):
-        pass
     return "[]"
 
 
@@ -443,7 +429,8 @@ class LLVMCompiler():
                 operand_cls.imm_leaf = None
             else:
                 operand_cls.asm_operand_cls = None
-                cond = "return ({minv} <= (Imm>>{shift})) && ((Imm>>{shift}) <= {maxv});".format(
+                cond = "return !(Imm & {mask}) && ({minv} <= (Imm>>{shift})) && ((Imm>>{shift}) <= {maxv});".format(
+                    mask=int(pow(2, imm.offset) - 1),
                     shift=imm.offset,
                     minv=-int(pow(2, imm.width)),
                     maxv=int(pow(2, imm.width) - 1),
@@ -463,6 +450,8 @@ class LLVMCompiler():
         instr_defs = []
         for cls in self.isa.instructions:
             instr = cls()
+            instr.isa = self.isa
+            instr.decode(instr.opc)  # dummy decode as all parameter is 0
             instr_def = InstrDefs()
 
             instr_def.varname = instr.__class__.__name__.upper()
