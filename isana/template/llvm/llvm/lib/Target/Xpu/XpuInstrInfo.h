@@ -15,7 +15,7 @@ class {{ namespace }}Subtarget;
 
 class {{ namespace }}InstrInfo : public {{ namespace }}GenInstrInfo {
 public:
-  {{ namespace }}InstrInfo();
+  {{ namespace }}InstrInfo({{ namespace }}Subtarget &STI);
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 

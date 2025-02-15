@@ -61,7 +61,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndex(
   return false;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrFrameRegImm(
+bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndexRegImm(
   SDValue Addr,
   SDValue &Base,
   SDValue &Offset
@@ -146,6 +146,21 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrRegImm(
   }
 
   if (SelectAddrGlobalRegImm(Addr, Base, Offset)) {
+    return true;
+  }
+
+  if (CurDAG->isBaseWithConstantOffset(Addr)) {
+    // (add addr, imm) -> (addr, imm)
+    Base = Addr.getOperand(0);
+    int64_t CVal = cast<ConstantSDNode>(Addr.getOperand(1))->getSExtValue();
+    Offset = CurDAG->getTargetConstant(CVal, DL, VT);
+    return true;
+  }
+
+    // (imm) -> (zero, imm)
+  if (auto *CVal = dyn_cast<ConstantSDNode>(Addr)) {
+    Base = CurDAG->getRegister(CustomXPU::X0, VT);
+    Offset = Addr;
     return true;
   }
 

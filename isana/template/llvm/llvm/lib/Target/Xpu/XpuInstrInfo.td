@@ -81,7 +81,7 @@ def HI20: SDNodeXForm<imm, [{
 }]>;
 
 def : Pat<(ImmS12:$in), (ADDI X0, ImmS12:$in)>;
-def : Pat<(ImmHi20:$in), (LUI (HI20 imm:$in))>;
+def : Pat<(ImmS20O12:$in), (LUI (HI20 imm:$in))>;
 def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;
 
 
