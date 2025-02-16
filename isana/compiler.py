@@ -7,6 +7,7 @@ from isana.semantic import (
     may_take_memory_address,
     get_alu_dag,
 )
+from isana.isa import Immediate
 
 
 _default_namespace = "Xpu"
@@ -506,7 +507,6 @@ class LLVMCompiler():
                 bitss_by_name[bits.label].append(bits)
 
             bit_defs = []
-            bit_instrs = []
             for label, bitss in reversed(bitss_by_name.items()):
                 if label == "$opc":
                     pass
@@ -516,66 +516,45 @@ class LLVMCompiler():
                         bitss_size,
                         label[1:],
                     ))
-                bit_sum = 0
-                for bits in reversed(bitss):
-                    if bits.label == "$opc":
-                        # bits_value = (instr.opc >> bit_sum) & (2 ** (bits.msb - bits.lsb) - 1)
-                        bits_value = (instr.opc >> bits.offset) & (2 ** (bits.size()) - 1)
-                        let_str = ""
-                        if bits.size() == 1:
-                            let_str += "  let Inst{{{}}} = ".format(bits.offset)
-                        else:
-                            let_str += "  let Inst{{{}-{}}} = ".format(
-                                bits.offset + bits.size() - 1,
-                                bits.offset,
-                            )
-                        let_str += "{};".format(bits_value)
-                        bit_instrs.append(let_str)
+            bit_instrs = []
+            bits_sum = 0
+            for bits in reversed(instr.bin.bitss):
+                if bits.label == "$opc":
+                    bits_value = (instr.opc >> bits_sum) & (2 ** (bits.size()) - 1)
+                    let_str = ""
+                    if bits.size() == 1:
+                        let_str += "  let Inst{{{}}} = ".format(bits_sum)
                     else:
-                        let_str = ""
-                        if bits.size() == 1:
-                            let_str += "  let Inst{{{}}} = ".format(bits.offset)
-                        else:
-                            let_str += "  let Inst{{{}-{}}} = ".format(
-                                bits.offset + bits.size() - 1,
-                                bits.offset,
-                            )
-                        if bits.size() == 1:
-                            let_str += "{}{{{}}};".format(bits.label[1:], bit_sum)
-                        else:
-                            let_str += "{}{{{}-{}}};".format(
-                                bits.label[1:],
-                                bit_sum + bits.size() - 1,
-                                bit_sum,
-                            )
-                        # bit_instrs.append("  let Inst{{{}-{}}} = {}{{{}-{}}};".format(
-                        #     bits.offset + bits.size() - 1,
-                        #     bits.offset,
-                        #     bits.label[1:],
-                        #     bit_sum + bits.size() - 1,
-                        #     bit_sum,
-                        # ))
-                        bit_instrs.append(let_str)
-                    bit_sum += bits.size()
-            # for bits in reversed(instr.bin.bitss):
-            #     if bits.label == "$opc":
-            #         bits_value = (instr.opc >> bit_sum) & (2 ** (bits.msb - bits.lsb) - 1)
-            #         bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
-            #             bit_sum + bits.msb - bits.lsb,
-            #             bit_sum,
-            #             bits_value,
-            #         ))
-            #     else:
-            #         bit_defs.append("  bits<{}> {};".format(
-            #             bits.size(),
-            #             bits.label[1:],
-            #         ))
-            #         bit_instrs.append("  let Inst{{{}-{}}} = {};".format(
-            #             bit_sum + bits.msb - bits.lsb,
-            #             bit_sum,
-            #             bits.label[1:],
-            #         ))
-            #     bit_sum += bits.size()
+                        let_str += "  let Inst{{{}-{}}} = ".format(
+                            bits_sum + bits.size() - 1,
+                            bits_sum,
+                        )
+                    let_str += "{};".format(bits_value)
+                    bit_instrs.append(let_str)
+                else:
+                    param_obj = self.isa.get_param_obj(bits.label[1:], instr)
+                    param_offset = 0
+                    if isinstance(param_obj, Immediate):
+                        param_offset = param_obj.offset
+                    # print(instr.opn, bits.label[1:], param_offset)
+                    let_str = ""
+                    if bits.size() == 1:
+                        let_str += "  let Inst{{{}}} = ".format(bits_sum)
+                    else:
+                        let_str += "  let Inst{{{}-{}}} = ".format(
+                            bits_sum + bits.size() - 1,
+                            bits_sum,
+                        )
+                    if bits.size() == 1:
+                        let_str += "{}{{{}}};".format(bits.label[1:], bits.lsb - param_offset)
+                    else:
+                        let_str += "{}{{{}-{}}};".format(
+                            bits.label[1:],
+                            bits.msb - param_offset,
+                            bits.lsb - param_offset,
+                        )
+                    bit_instrs.append(let_str)
+                bits_sum += bits.size()
             instr_def.bit_defs = "\n".join(bit_defs)
             instr_def.bit_insts = "\n".join(bit_instrs)
 

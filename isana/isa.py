@@ -146,6 +146,20 @@ class ISA():
             s = str(hex(value))
         return s
 
+    def get_param_obj(self, name: str, instr):
+        param = instr.params.outputs.get(name, None) or instr.params.inputs.get(name, None)
+        if self.is_reg_type(param.type_):
+            for reg in self.registers:
+                if param.type_ == reg.label:
+                    return reg
+        elif self.is_imm_type(param.type_):
+            for imm in self.immediates:
+                if param.type_ == imm.label:
+                    return imm
+        else:
+            return None
+        return None
+
     def param_str(self, param):
         if self.is_opc_type(param.type_):
             s = param.label

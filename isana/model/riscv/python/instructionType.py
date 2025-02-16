@@ -49,7 +49,7 @@ class InstrS(Instruction):
 
 
 class InstrB(Instruction):
-    prm = parameter("rs1:GPR", "rs2:GPR, imm:ImmS13")
+    prm = parameter("", "rs1:GPR, rs2:GPR, imm:ImmS12O1")
     asm = assembly("$opn $rs1, $rs2, $imm")
     bin = binary("$imm[12], $imm[10:5], $rs2[4:0], $rs1[4:0], $opc[14:12], $imm[4:1], $imm[11], $opc[6:0]")
 
@@ -61,7 +61,7 @@ class InstrU(Instruction):
 
 
 class InstrJ(Instruction):
-    prm = parameter("rd:GPR", "imm:ImmS21")
+    prm = parameter("rd:GPR", "imm:ImmS20O1")
     asm = assembly("$opn $rd, $imm")
     bin = binary("$imm[20], $imm[10:1], $imm[11], $imm[19:12], $rd[4:0], $opc[6:0]")
 
@@ -133,6 +133,12 @@ class InstrCB(Instruction):
     bin = binary("$opc[15:13], $imm[7:5], $rdrs1[2:0], $imm[4:0], $opc[1:0]")
 
 
+class InstrCBBranch(Instruction):
+    prm = parameter("", "rdrs1:GPRC, imm:ImmS9")
+    asm = assembly("$opn $rdrs1, $imm")
+    bin = binary("$opc[15:13], $imm[7:5], $rdrs1[2:0], $imm[4:0], $opc[1:0]")
+
+
 class InstrCJ(Instruction):
     prm = parameter("", "imm:ImmS12")
     asm = assembly("$opn $imm")
@@ -182,7 +188,7 @@ class InstrCMJT(Instruction):
 
 
 class InstrCMPP(Instruction):
-    prm = parameter("", "rlist:Imm, imm:Imm")
+    prm = parameter("", "rlist:Imm, imm:ImmS2O4")
     asm = assembly("$opn $rlist, $imm")
     bin = binary("$opc[15:10], $opc[9:8], $rlist[3:0], $imm[5:4], $opc[1:0]")
 

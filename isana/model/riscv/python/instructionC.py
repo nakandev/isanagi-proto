@@ -5,8 +5,9 @@ from .defs import xlen
 # from .memory import Mem
 # from .register import GPR, GPRC, CSR, PCR
 from .instructionType import (
-    InstrCR, InstrCI, InstrCSS, InstrCIW, InstrCL, InstrCS, InstrCA, InstrCB, InstrCJ,
-    InstrCLB, InstrCSB, InstrCLH, InstrCSH, InstrCU, InstrCMMV, InstrCMJT, InstrCMPP,
+    InstrCR, InstrCI, InstrCSS, InstrCIW, InstrCL, InstrCS, InstrCA, InstrCB,
+    InstrCBBranch, InstrCJ, InstrCLB, InstrCSB, InstrCLH, InstrCSH, InstrCU,
+    InstrCMMV, InstrCMJT, InstrCMPP,
 )
 
 
@@ -19,64 +20,75 @@ class illegal(InstrCIW):
 
 class c_addi4spn(InstrCIW):
     opn, opc = "c.addi4spn", 0b000_00000000_000_00
+    prm = parameter("rd:GPRC", "imm:ImmS32O2")
     bin = binary("$opc[15:13], $imm[5:4], $imm[9:6], $imm[2], $imm[3], $rd[2:0], $opc[1:0]")
 
 
 class c_fld(InstrCL):
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O3")
     opn, opc = "c.fld", 0b001_000_000_00_000_00
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[7:6], $rd[2:0], $opc[1:0]")
 
 
 class c_lq(InstrCL):
     opn, opc = "c.lq", 0b001_000_000_00_000_00
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O4")
     bin = binary("$opc[15:13], $imm[5:4], $imm[8], $rs1[2:0], $imm[7:6], $rd[2:0], $opc[1:0]")
     is_load = True
 
 
 class c_lw(InstrCL):
     opn, opc = "c.lw", 0b010_000_000_00_000_00
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O2")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[2], $imm[6], $rd[2:0], $opc[1:0]")
     is_load = True
 
 
 class c_flw(InstrCL):
     opn, opc = "c.flw", 0b011_000_000_00_000_00
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O2")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[2], $imm[6], $rd[2:0], $opc[1:0]")
     is_load = True
 
 
 class c_ld(InstrCL):
     opn, opc = "c.ld", 0b011_000_000_00_000_00
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O3")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[7:6], $rd[2:0], $opc[1:0]")
     is_load = True
 
 
 class c_fsd(InstrCS):
     opn, opc = "c.fsd", 0b101_000_000_00_000_00
+    prm = parameter("rd:GPRC", "rs1:GPRC, imm:ImmS5O3")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[7:6], $rs2[2:0], $opc[1:0]")
     is_store = True
 
 
 class c_sq(InstrCS):
     opn, opc = "c.sq", 0b101_000_000_00_000_00
+    prm = parameter("", "rs2:GPRC, rs1:GPRC, imm:ImmS5O4")
     bin = binary("$opc[15:13], $imm[5:4], $imm[8:8], $rs1[2:0], $imm[7:6], $rs2[2:0], $opc[1:0]")
     is_store = True
 
 
 class c_sw(InstrCS):
     opn, opc = "c.sw", 0b110_000_000_00_000_00
+    prm = parameter("", "rs2:GPRC, rs1:GPRC, imm:ImmS5O2")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[2], $imm[6], $rs2[2:0], $opc[1:0]")
     is_store = True
 
 
 class c_fsw(InstrCS):
     opn, opc = "c.fsw", 0b111_000_000_00_000_00
+    prm = parameter("", "rs2:GPRC, rs1:GPRC, imm:ImmS5O2")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[2], $imm[6], $rs2[2:0], $opc[1:0]")
     is_store = True
 
 
 class c_sd(InstrCS):
     opn, opc = "c.sd", 0b111_000_000_00_000_00
+    prm = parameter("", "rs2:GPRC, rs1:GPRC, imm:ImmS5O3")
     bin = binary("$opc[15:13], $imm[5:3], $rs1[2:0], $imm[7:6], $rs2[2:0], $opc[1:0]")
     is_store = True
 
@@ -93,6 +105,7 @@ class c_addi(InstrCI):
 
 class c_jal(InstrCJ):
     opn, opc = "c.jal", 0b001_0_00000_00000_01
+    prm = parameter("", "imm:ImmS11O1")
     bin = binary("$opc[15:13], $imm[11], $imm[4], $imm[9:8], $imm[10], "
                  "$imm[6], $imm[7], $imm[3:1], $imm[5], $opc[1:0]")
     is_call = True
@@ -117,8 +130,9 @@ class c_li(InstrCI):
 
 class c_addi16sp(InstrCI):
     opn, opc = "c.addi16sp", 0b011_0_00010_00000_01
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O4")
     asm = assembly("$opn $imm")
-    bin = binary("$opc[15:13], $imm[5], $opc[11:7], $imm[4], $imm[6], $imm[8:7], $imm[5], $opc[1:0]")
+    bin = binary("$opc[15:13], $imm[9], $opc[11:7], $imm[4], $imm[6], $imm[8:7], $imm[5], $opc[1:0]")
 
 
 class c_lui(InstrCI):
@@ -133,7 +147,7 @@ class c_srli(InstrCB):
 
 class c_srli64(InstrCB):
     opn, opc = "c.srli64", 0b100_0_00_000_00000_01
-    bin = binary("$opc[15:13], $imm[5], $opc[11:10], $rdrs1[2:0], $opc[6:2], $opc[1:0]")
+    bin = binary("$opc[15:13], $opc[12], $opc[11:10], $rdrs1[2:0], $opc[6:2], $opc[1:0]")
 
 
 class c_srai(InstrCB):
@@ -143,7 +157,7 @@ class c_srai(InstrCB):
 
 class c_srai64(InstrCB):
     opn, opc = "c.srai64", 0b100_0_01_000_00000_01
-    bin = binary("$opc[15:13], $imm[5], $opc[11:10], $rdrs1[2:0], $opc[6:2], $opc[1:0]")
+    bin = binary("$opc[15:13], $opc[12], $opc[11:10], $rdrs1[2:0], $opc[6:2], $opc[1:0]")
 
 
 class c_andi(InstrCB):
@@ -177,6 +191,7 @@ class c_addw(InstrCA):
 
 class c_j(InstrCJ):
     opn, opc = "c.j", 0b101_00000000000_01
+    prm = parameter("", "imm:ImmS11O1")
     bin = binary("$opc[15:13], $imm[11], $imm[4], $imm[9:8], $imm[10], "
                  "$imm[6], $imm[7], $imm[3:1], $imm[5], $opc[1:0]")
     is_jump = True
@@ -188,8 +203,9 @@ class c_j(InstrCJ):
         return self.addr + self.params.inputs['imm'].value
 
 
-class c_beqz(InstrCB):
+class c_beqz(InstrCBBranch):
     opn, opc = "c.beqz", 0b110_000_000_00000_01
+    prm = parameter("", "rdrs1:GPRC, imm:ImmS8O1")
     bin = binary("$opc[15:13], $imm[8], $imm[4:3], $rdrs1[2:0], "
                  "$imm[7:6], $imm[2:1], $imm[5], $opc[1:0]")
     is_branch = True
@@ -203,8 +219,9 @@ class c_beqz(InstrCB):
         return self.addr + self.params.inputs['imm'].value
 
 
-class c_bnez(InstrCB):
+class c_bnez(InstrCBBranch):
     opn, opc = "c.bnez", 0b111_000_000_00000_01
+    prm = parameter("", "rdrs1:GPRC, imm:ImmS8O1")
     bin = binary("$opc[15:13], $imm[8], $imm[4:3], $rdrs1[2:0], "
                  "$imm[7:6], $imm[2:1], $imm[5], $opc[1:0]")
     is_branch = True
@@ -230,30 +247,35 @@ class c_slli64(InstrCI):
 
 class c_fldsp(InstrCI):
     opn, opc = "c.fldsp", 0b001_0_00_000_00000_10
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O3")
     bin = binary("$opc[15:13], $imm[5], $rdrs1[4:0], $imm[4:3], $imm[8:6], $opc[1:0]")
     is_pop = True
 
 
 class c_lqsp(InstrCI):
     opn, opc = "c.lqsp", 0b001_0_00_000_00000_10
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O4")
     bin = binary("$opc[15:13], $imm[5], $rdrs1[4:0], $imm[4], $imm[9:6], $opc[1:0]")
     is_pop = True
 
 
 class c_lwsp(InstrCI):
     opn, opc = "c.lwsp", 0b010_0_00_000_00000_10
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O2")
     bin = binary("$opc[15:13], $imm[5], $rdrs1[4:0], $imm[4:2], $imm[7:6], $opc[1:0]")
     is_pop = True
 
 
 class c_flwsp(InstrCI):
     opn, opc = "c.flwsp", 0b011_0_00_000_00000_10
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O2")
     bin = binary("$opc[15:13], $imm[5], $rdrs1[4:0], $imm[4:2], $imm[7:6], $opc[1:0]")
     is_pop = True
 
 
 class c_ldsp(InstrCI):
     opn, opc = "c.ldsp", 0b011_0_00_000_00000_10
+    prm = parameter("rdrs1:GPR", "imm:ImmS6O3")
     bin = binary("$opc[15:13], $imm[5], $rdrs1[4:0], $imm[4:3], $imm[8:6], $opc[1:0]")
     is_pop = True
 
@@ -307,30 +329,35 @@ class c_add(InstrCR):
 
 class c_fsdsp(InstrCSS):
     opn, opc = "c.fsdsp", 0b101_000000_00000_10
+    prm = parameter("", "rs2:GPR, imm:ImmS6O3")
     bin = binary("$opc[15:13], $imm[5:3], $imm[8:6], $rs2[4:0], $opc[1:0]")
     is_push = True
 
 
 class c_sqsp(InstrCSS):
     opn, opc = "c.spsp", 0b101_000000_00000_10
+    prm = parameter("", "rs2:GPR, imm:ImmS6O4")
     bin = binary("$opc[15:13], $imm[5:4], $imm[9:6], $rs2[4:0], $opc[1:0]")
     is_push = True
 
 
 class c_swsp(InstrCSS):
     opn, opc = "c.swsp", 0b110_000000_00000_10
+    prm = parameter("", "rs2:GPR, imm:ImmS6O2")
     bin = binary("$opc[15:13], $imm[5:2], $imm[7:6], $rs2[4:0], $opc[1:0]")
     is_push = True
 
 
 class c_fswsp(InstrCSS):
     opn, opc = "c.fswsp", 0b111_000000_00000_10
+    prm = parameter("", "rs2:GPR, imm:ImmS6O2")
     bin = binary("$opc[15:13], $imm[5:2], $imm[7:6], $rs2[4:0], $opc[1:0]")
     is_push = True
 
 
 class c_sdsp(InstrCSS):
     opn, opc = "c.sdsp", 0b111_000000_00000_10
+    prm = parameter("", "rs2:GPR, imm:ImmS6O3")
     bin = binary("$opc[15:13], $imm[5:3], $imm[8:6], $rs2[4:0], $opc[1:0]")
     is_push = True
 
