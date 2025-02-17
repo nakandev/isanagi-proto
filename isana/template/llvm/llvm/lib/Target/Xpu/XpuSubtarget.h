@@ -56,6 +56,13 @@ public:
   const {{ namespace }}RegisterInfo *getRegisterInfo() const override {
     return &RegInfo;
   }
+
+  MVT getXLenVT() const {
+    return Has64Bit ? MVT::i64 : MVT::i32;
+  }
+  unsigned getXLen() const {
+    return Has64Bit ? 64 : 32;
+  }
 };
 } // End llvm namespace
 

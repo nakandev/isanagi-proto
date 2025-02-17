@@ -66,6 +66,12 @@ class OperandType(KwargsClass):
         'cond',
     )
 
+class BrImmOperandAttr(KwargsClass):
+    keys = (
+        'width',
+        'offset',
+    )
+
 class InstrDefs(KwargsClass):
     keys = (
         'varname',
@@ -448,6 +454,35 @@ class LLVMCompiler():
                 basecls="i32",
             ))
 
+        br_imm_operand_clss = []
+        for cls in self.isa.instructions:
+            instr = cls()
+            instr.isa = self.isa
+            instr.decode(instr.opc)  # dummy decode as all parameter is 0
+            instr_def = InstrDefs()
+            if may_change_pc_relative(instr.semantic):
+                # for label, cls in instr.prm.inputs.items():
+                #     if label == "imm":
+                #         break
+                # else:
+                #     continue
+                param_obj = self.isa.get_param_obj("imm", instr)
+                if not isinstance(param_obj, Immediate):
+                    continue
+                cls = param_obj
+                brcls = "Br" + cls.label
+                # brcls = "Br" + cls
+                operand_cls = OperandCls(
+                    varname=brcls,
+                    basecls="OtherVT",
+                )
+                operand_cls.br_attr = BrImmOperandAttr(
+                    width=cls.width,
+                    offset=cls.offset,
+                )
+                if brcls not in (o.varname for o in br_imm_operand_clss):
+                    br_imm_operand_clss.append(operand_cls)
+
         instr_defs = []
         for cls in self.isa.instructions:
             instr = cls()
@@ -455,10 +490,19 @@ class LLVMCompiler():
             instr.decode(instr.opc)  # dummy decode as all parameter is 0
             instr_def = InstrDefs()
 
+            pc_relative = may_change_pc_relative(instr.semantic)
+
             instr_def.varname = instr.__class__.__name__.upper()
-            instr_def.ins = ', '.join([
-                '{}:${}'.format(cls, label) for label, cls in instr.prm.inputs.items()
-            ])
+            # instr_def.ins = ', '.join([
+            #     '{}:${}'.format(cls, label) for label, cls in instr.prm.inputs.items()
+            # ])
+            instr_def.ins = []
+            for label, cls in instr.prm.inputs.items():
+                brcls = "Br" + cls
+                if pc_relative and brcls in (o.varname for o in br_imm_operand_clss):
+                    cls = brcls
+                instr_def.ins.append('{}:${}'.format(cls, label))
+            instr_def.ins = ", ".join(instr_def.ins)
 
             # instr_def.outs = ', '.join([
             #     '{}:${}'.format(cls, label) for label, cls in instr.prm.outputs.items()
@@ -586,6 +630,7 @@ class LLVMCompiler():
             "asm_operand_clss": asm_operand_clss,
             "operand_clss": operand_clss,
             "operand_types": operand_types,
+            "br_imm_operand_clss": br_imm_operand_clss,
             "instr_defs": instr_defs,
         }
         self._read_template_and_write(fdirs, fname, kwargs)

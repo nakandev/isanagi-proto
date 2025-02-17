@@ -24,13 +24,21 @@ using namespace llvm;
 
 {{ namespace }}TargetLowering::{{ namespace }}TargetLowering(const TargetMachine &TM,
                                                  const {{ namespace }}Subtarget &STI)
-    : TargetLowering(TM) {
+    : TargetLowering(TM), Subtarget(STI) {
+
+  MVT XLenVT = Subtarget.getXLenVT();
 
   // Set up the register classes.
   addRegisterClass(MVT::i32, &{{ namespace }}::GPRRegClass);
 
   // Compute derived properties from the register classes
-  computeRegisterProperties(STI.getRegisterInfo());
+  computeRegisterProperties(Subtarget.getRegisterInfo());
+
+  setOperationAction(ISD::BR_JT, MVT::Other, Expand);
+  setOperationAction(ISD::BR_CC, XLenVT, Expand);
+  // setOperationAction(ISD::BRCOND, MVT::Other, Custom);
+  setOperationAction(ISD::SELECT   , XLenVT, Custom);
+  setOperationAction(ISD::SELECT_CC, XLenVT, Expand);
 
   // Function alignments
   setMinFunctionAlignment(Align(4));
@@ -171,6 +179,41 @@ SDValue
   return Chain;
 }
 
+SDValue
+{{ namespace }}TargetLowering::LowerOperation(
+  SDValue Op,
+  SelectionDAG &DAG
+) const {
+  switch (Op.getOpcode()) {
+  default:
+    report_fatal_error("unimplemented operand");
+  case ISD::SELECT:
+    return lowerSELECT(Op, DAG);
+  }
+}
+
+SDValue
+{{ namespace }}TargetLowering::lowerSELECT(
+  SDValue Op,
+  SelectionDAG &DAG
+) const {
+  SDValue CondV = Op.getOperand(0);
+  SDValue TrueV = Op.getOperand(1);
+  SDValue FalseV = Op.getOperand(2);
+  SDLoc DL(Op);
+  MVT VT = Op.getSimpleValueType();
+  MVT XLenVT = Subtarget.getXLenVT();
+
+  // (select condv, truev, falsev) -> (SELECT condv, 0, setne, truev, falsev)
+  SDValue Zero = DAG.getConstant(0, DL, XLenVT);
+  // SDValue SetNE = DAG.getCondCode(ISD::SETNE);
+  SDValue SetNE = DAG.getConstant(ISD::SETNE, DL, XLenVT);
+
+  SDValue Ops[] = {CondV, Zero, SetNE, TrueV, FalseV};
+
+  return DAG.getNode({{ namespace }}ISD::SELECT_CC, DL, VT, Ops);
+}
+
 const char *
 {{ namespace }}TargetLowering::getTargetNodeName(
   unsigned Opcode
@@ -192,4 +235,86 @@ const char *
     return "{{ namespace }}ISD::MEMCPY";
   }
   return nullptr;
+}
+
+static unsigned
+getBranchOpcodeForIntCondCode (ISD::CondCode CC) {
+  switch (CC) {
+  default:
+    llvm_unreachable("Unsupported CondCode");
+  case ISD::SETEQ:
+    return {{ namespace }}::BEQ;
+  case ISD::SETNE:
+    return {{ namespace }}::BNE;
+  case ISD::SETLT:
+    return {{ namespace }}::BLT;
+  case ISD::SETGE:
+    return {{ namespace }}::BGE;
+  case ISD::SETULT:
+    return {{ namespace }}::BLTU;
+  case ISD::SETUGE:
+    return {{ namespace }}::BGEU;
+  }
+}
+
+static MachineBasicBlock *emitSelectPseudo(
+  MachineInstr &MI,
+  MachineBasicBlock *BB,
+  const {{ namespace }}Subtarget &Subtarget
+) {
+  const TargetInstrInfo &TII = *Subtarget.getInstrInfo();
+  const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  DebugLoc DL = MI.getDebugLoc();
+  MachineFunction::iterator I = ++BB->getIterator();
+
+  MachineBasicBlock *HeadMBB = BB;
+  MachineFunction *F = BB->getParent();
+  MachineBasicBlock *TailMBB = F->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *IfFalseMBB = F->CreateMachineBasicBlock(LLVM_BB);
+
+  F->insert(I, IfFalseMBB);
+  F->insert(I, TailMBB);
+
+  TailMBB->splice(TailMBB->begin(), HeadMBB,
+                  std::next(MachineBasicBlock::iterator(MI)), HeadMBB->end());
+
+  TailMBB->transferSuccessorsAndUpdatePHIs(HeadMBB);
+  HeadMBB->addSuccessor(IfFalseMBB);
+  HeadMBB->addSuccessor(TailMBB);
+
+  unsigned LHS = MI.getOperand(1).getReg();
+  unsigned RHS = MI.getOperand(2).getReg();
+  auto CC = static_cast<ISD::CondCode>(MI.getOperand(3).getImm());
+  unsigned Opcode = getBranchOpcodeForIntCondCode(CC);
+
+  BuildMI(HeadMBB, DL, TII.get(Opcode))
+    .addReg(LHS)
+    .addReg(RHS)
+    .addMBB(TailMBB);
+
+  IfFalseMBB->addSuccessor(TailMBB);
+
+  // %Result = phi [ %TrueValue, HeadMBB ], [ %FalseValue, IfFalseMBB ]
+  BuildMI(*TailMBB, TailMBB->begin(), DL, TII.get({{ namespace }}::PHI),
+          MI.getOperand(0).getReg())
+      .addReg(MI.getOperand(4).getReg())
+      .addMBB(HeadMBB)
+      .addReg(MI.getOperand(5).getReg())
+      .addMBB(IfFalseMBB);
+
+  MI.eraseFromParent();
+  return TailMBB;
+}
+
+MachineBasicBlock *
+{{ namespace }}TargetLowering::EmitInstrWithCustomInserter(
+  MachineInstr &MI,
+  MachineBasicBlock *BB
+) const {
+  switch (MI.getOpcode()) {
+  default:
+    llvm_unreachable("Unexpected instr type to insert");
+  case {{ namespace }}::Select_GPR:
+    return emitSelectPseudo(MI, BB, Subtarget);
+  }
 }

@@ -22,6 +22,10 @@ public:
 
   void printOperand(const MCInst *MI, unsigned OpNo,
                     raw_ostream &O, const char *Modifier = nullptr);
+  void printOperand(const MCInst *MI, unsigned Address, unsigned OpNo,
+                    raw_ostream &O, const char *Modifier = nullptr) {
+    printOperand(MI, OpNo, O, Modifier);
+  }
   {% for asmopcls in asm_operand_clss -%}
   void print{{ asmopcls.name }}(const MCInst *MI, unsigned OpNo,
           raw_ostream &O);

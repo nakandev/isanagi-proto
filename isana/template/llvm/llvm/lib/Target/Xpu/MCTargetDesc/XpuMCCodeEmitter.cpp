@@ -48,6 +48,12 @@ public:
     SmallVectorImpl<MCFixup> &Fixups,
     const MCSubtargetInfo &STI) const;
 
+  template <unsigned S>
+  unsigned getImmOpValueRShift(
+    const MCInst &MI, unsigned OpNo,
+    SmallVectorImpl<MCFixup> &Fixups,
+    const MCSubtargetInfo &STI) const;
+
   // uint64_t getMemoryOpValue(const MCInst &MI, unsigned Op,
   //   SmallVectorImpl<MCFixup> &Fixups,
   //   const MCSubtargetInfo &STI) const;
@@ -132,6 +138,23 @@ unsigned
   Fixups.push_back(
       MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
   return 0;
+}
+
+template <unsigned S>
+unsigned
+{{ namespace }}MCCodeEmitter::getImmOpValueRShift(
+  const MCInst &MI, unsigned OpNo,
+  SmallVectorImpl<MCFixup> &Fixups,
+  const MCSubtargetInfo &STI
+) const {
+  const MCOperand &MO = MI.getOperand(OpNo);
+
+  if (MO.isImm()) {
+    unsigned Res = MO.getImm();
+    assert((Res & ((1 << S) - 1)) == 0 && "LSB is non-zero");
+    return Res >> S;
+  }
+  return getMachineOpValue (MI, MO, Fixups, STI);
 }
 
 void

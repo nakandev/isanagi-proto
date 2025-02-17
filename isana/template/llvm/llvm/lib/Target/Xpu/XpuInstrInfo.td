@@ -22,6 +22,15 @@ def {{ opcls.varname }}: Operand<{{ opcls.basecls }}>;
 {% endif -%}
 {% endfor %}
 
+class BrImmS<int n, int s> : Operand<OtherVT> {
+  let OperandType   = "OPERAND_PCREL";
+  let EncoderMethod = "getImmOpValueRShift<" # s # ">";
+  let DecoderMethod = "decodeSImmOperand<" # n # "," # s # ">";
+}
+{% for opcls in br_imm_operand_clss -%}
+def {{ opcls.varname }}: BrImmS<{{ opcls.br_attr.width }},{{ opcls.br_attr.offset }}>;
+{% endfor %}
+
 //=== Instruction Classes
 class {{ namespace }}Inst<dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction {
   let Namespace = "{{ namespace }}";
@@ -143,3 +152,65 @@ def : LoadPattern<zextloadi16, LHU>;
 def : StorePattern<truncstorei8 , SB, GPR>;
 def : StorePattern<truncstorei16, SH, GPR>;
 def : StorePattern<store        , SW, GPR>;
+
+//== Branch/Jump Pattern
+def PseudoBR: CustomXPUInst<
+  (outs), (ins BrImmS20O1:$imm),
+  "",
+  [(br bb:$imm)]>,
+  PseudoInstExpansion<(JAL X0, BrImmS20O1:$imm)>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let isBarrier = 1;
+  let isBranch = 1;
+  let isTerminator = 1;
+}
+
+def : Pat<(brcond GPR:$cond, bb:$dst), (BNE GPR:$cond, X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setne  GPR:$lhs, 0)), bb:$dst), (BNE GPR:$lhs, X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (seteq  GPR:$lhs, 0)), bb:$dst), (BEQ GPR:$lhs, X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (seteq  GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ GPR:$lhs, GPR:$rhs, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setueq GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ GPR:$lhs, GPR:$rhs, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setne  GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE GPR:$lhs, GPR:$rhs, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setune GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE GPR:$lhs, GPR:$rhs, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setlt  GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE (SLT  GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setult GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE (SLTU GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setgt  GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE (SLT  GPR:$rhs, GPR:$lhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setugt GPR:$lhs, GPR:$rhs)), bb:$dst), (BNE (SLTU GPR:$rhs, GPR:$lhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setle  GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLT  GPR:$rhs, GPR:$lhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setule GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLTU GPR:$rhs, GPR:$lhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setge  GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLT  GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
+def : Pat<(brcond (i32 (setuge GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLTU GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
+
+def PseudoBRIND: CustomXPUInst<
+  (outs), (ins GPR:$rs1, ImmS12:$imm),
+  "",
+  []>,
+  PseudoInstExpansion<(JALR X0, GPR:$rs1, ImmS12:$imm)>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let isBarrier = 1;
+  let isBranch = 1;
+  let isIndirectBranch = 1;
+  let isTerminator = 1;
+}
+def : Pat<(brind GPR:$rs1), (PseudoBRIND GPR:$rs1, 0)>;
+def : Pat<(brind (add GPR:$rs1, ImmS12:$imm)), (PseudoBRIND GPR:$rs1, ImmS12:$imm)>;
+
+def SDT_CustomXPUSelectCC : SDTypeProfile<1, 5, [SDTCisSameAs<1, 2>,
+                                                 SDTCisSameAs<0, 4>,
+                                                 SDTCisSameAs<4, 5>]>;
+def SelectCC : SDNode<"CustomXPUISD::SELECT_CC", SDT_CustomXPUSelectCC, [SDNPInGlue]>;
+def Select_GPR : CustomXPUInst<
+  (outs GPR:$dst), (ins GPR:$lhs, GPR:$rhs, ImmS12:$imm, GPR:$truev, GPR:$falsev),
+  "",
+  [(set GPR:$dst, (SelectCC GPR:$lhs, GPR:$rhs, (i32 imm:$imm), GPR:$truev, GPR:$falsev))]>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let usesCustomInserter = 1;
+}
+def : Pat<(SelectCC GPR:$lhs, 0, (i32 imm:$imm), GPR:$truev, GPR:$falsev),
+          (Select_GPR GPR:$lhs, X0, imm:$imm, GPR:$truev, GPR:$falsev)>;
