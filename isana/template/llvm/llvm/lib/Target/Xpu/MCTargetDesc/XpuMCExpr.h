@@ -12,7 +12,8 @@ class {{ namespace }}MCExpr : public MCTargetExpr {
 public:
   enum VariantKind {
     VK_{{ namespace }}_None,
-    VK_{{ namespace }}_Symbol,
+    VK_{{ namespace }}_CALL,
+    VK_{{ namespace }}_SYMBOL,
     VK_{{ namespace }}_Invalid
   };
 
@@ -37,6 +38,8 @@ public:
 
   bool evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
                                  const MCFixup *Fixup) const override;
+  bool evaluateAsConstant(int64_t &Res) const;
+
   void visitUsedExpr(MCStreamer &Streamer) const override;
 
   MCFragment *findAssociatedFragment() const override {

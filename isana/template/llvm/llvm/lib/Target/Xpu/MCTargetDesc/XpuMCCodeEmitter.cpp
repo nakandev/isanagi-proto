@@ -9,6 +9,7 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -61,6 +62,10 @@ public:
   void encodeInstruction(const MCInst &MI, SmallVectorImpl<char> &CB,
     SmallVectorImpl<MCFixup> &Fixups,
     const MCSubtargetInfo &STI) const override;
+
+  void expandFunctionCall(const MCInst &MI, SmallVectorImpl<char> &CB,
+                          SmallVectorImpl<MCFixup> &Fixups,
+                          const MCSubtargetInfo &STI) const;
 };
 
 } // end anonymous namespace
@@ -72,6 +77,48 @@ llvm::create{{ namespace }}MCCodeEmitter(
 )
 {
   return new {{ namespace }}MCCodeEmitter(MCII, *Ctx.getRegisterInfo(), false, false);
+}
+
+void
+{{ namespace }}MCCodeEmitter::expandFunctionCall(
+  const MCInst &MI,
+  SmallVectorImpl<char> &CB,
+  SmallVectorImpl<MCFixup> &Fixups,
+  const MCSubtargetInfo &STI
+) const {
+  MCInst TmpInst;
+  MCOperand Func;
+  MCRegister Ra;
+  uint32_t Binary;
+
+  if (MI.getOpcode() == {{ namespace }}::PseudoCALL) {
+    Func = MI.getOperand(0);
+    Ra = {{ namespace }}::X1;
+  }
+
+  assert(Func.isExpr() && "Expected expression");
+
+  const MCExpr *CallExpr = Func.getExpr();
+
+#if 0
+  // long jump
+  //  auipc x1, $func | auipc x1, 0
+  //                  |   + fixup:pc_rel
+  //  jalr x1, x1, 0  | jalr x1, x1, 0
+  TmpInst = MCInstBuilder({{ namespace }}::AUIPC).addReg(Ra).addExpr(CallExpr);
+  Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(CB, Binary, llvm::endianness::little);
+
+  TmpInst = MCInstBuilder({{ namespace }}::JALR).addReg(Ra).addReg(Ra).addImm(0);
+  Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(CB, Binary, llvm::endianness::little);
+#endif
+  // short jump
+  // jal x1, $func    | jal x1, 0
+  //                  |   + fixup:pc_rel
+  TmpInst = MCInstBuilder({{ namespace }}::JAL).addReg(Ra).addExpr(CallExpr);
+  Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(CB, Binary, llvm::endianness::little);
 }
 
 unsigned
@@ -99,8 +146,10 @@ unsigned
     case {{ namespace }}MCExpr::VK_{{ namespace }}_None:
     case {{ namespace }}MCExpr::VK_{{ namespace }}_Invalid:
       llvm_unreachable("Unhandled fixup kind!");
-    case {{ namespace }}MCExpr::VK_{{ namespace }}_Symbol:
-      // FixupKind = {{ namespace }}::fixup_customxpu_other_imm_0;  // TODO this is trial.
+    case {{ namespace }}MCExpr::VK_{{ namespace }}_CALL:
+          FixupKind = {{ namespace }}::fixup_{{ namespace.lower() }}_pc_rel_1;  // TODO fix it
+    case {{ namespace }}MCExpr::VK_{{ namespace }}_SYMBOL:
+      // FixupKind = {{ namespace }}::fixup_{{ namespace.lower() }}_other_imm_0;  // TODO this is trial.
       {
         unsigned Opcode = MI.getOpcode();
         switch (Opcode) {
@@ -168,6 +217,14 @@ void
   const unsigned Opcode = MI.getOpcode();
   const MCInstrDesc &Desc = MCII.get(Opcode);
   unsigned Size = Desc.getSize();
+
+  switch (MI.getOpcode()) {
+  default:
+    break;
+  case CustomXPU::PseudoCALL:
+    expandFunctionCall(MI, CB, Fixups, STI);
+    return;
+  }
 
   // Get instruction encoding and emit it
   auto Endian = IsBigEndian ? llvm::endianness::big : llvm::endianness::little;

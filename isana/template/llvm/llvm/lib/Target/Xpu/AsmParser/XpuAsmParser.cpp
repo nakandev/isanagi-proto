@@ -1,5 +1,6 @@
 //===- {{ namespace }}AsmParser.cpp - Parse {{ namespace }} assembly to MCInst instructions -===//
 
+#include "MCTargetDesc/{{ namespace }}MCExpr.h"
 #include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
 #include "TargetInfo/{{ namespace }}TargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
@@ -57,6 +58,7 @@ class {{ namespace }}AsmParser : public MCTargetAsmParser {
   {% for asmopcls in asm_operand_clss -%}
   ParseStatus parse{{ asmopcls.name }}AsmOp(OperandVector &Operands);
   {% endfor -%}
+  ParseStatus parseCallSymbol(OperandVector &Operands);
   bool parseOperand(OperandVector &Operands, StringRef Mnemonic);
 
 public:
@@ -66,6 +68,9 @@ public:
 #include "{{ namespace }}GenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
   };
+
+  static bool classifySymbolRef(const MCExpr *Expr,
+                                {{ namespace }}MCExpr::VariantKind &Kind);
 
   {{ namespace }}AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
                const MCInstrInfo &MII, const MCTargetOptions &Options)
@@ -129,6 +134,32 @@ public:
   bool isReg() const override { return Kind == Register; }
   bool isImm() const override { return Kind == Immediate; }
   bool isMem() const override { return false; }
+
+  static bool evaluateConstantImm(const MCExpr *Expr, int64_t &Imm,
+                                  {{ namespace }}MCExpr::VariantKind &VK) {
+    if (auto *RE = dyn_cast<{{ namespace }}MCExpr>(Expr)) {
+      VK = RE->getKind();
+      return RE->evaluateAsConstant(Imm);
+    }
+
+    if (auto CE = dyn_cast<MCConstantExpr>(Expr)) {
+      VK = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+      Imm = CE->getValue();
+      return true;
+    }
+
+    return false;
+  }
+
+  bool isCallSymbol() const {
+    int64_t Imm;
+    {{ namespace }}MCExpr::VariantKind VK = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+    // Must be of 'immediate' type but not a constant.
+    if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
+      return false;
+    return {{ namespace }}AsmParser::classifySymbolRef(getImm(), VK) &&
+           (VK == {{ namespace }}MCExpr::VK_{{ namespace }}_CALL); // TODO fix it
+  }
 
   bool isConstantImm() const {
     return isImm() && isa<MCConstantExpr>(getImm());
@@ -389,6 +420,34 @@ ParseStatus {{ namespace }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVecto
 }
 {% endfor %}
 
+ParseStatus {{ namespace }}AsmParser::parseCallSymbol(OperandVector &Operands) {
+  SMLoc S = getLoc();
+  SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+  const MCExpr *Res;
+
+  if (getLexer().getKind() != AsmToken::Identifier)
+    return ParseStatus::NoMatch;
+
+  // Avoid parsing the register in `call rd, foo` as a call symbol.
+  if (getLexer().peekTok().getKind() != AsmToken::EndOfStatement)
+    return ParseStatus::NoMatch;
+
+  StringRef Identifier;
+  if (getParser().parseIdentifier(Identifier))
+    return ParseStatus::Failure;
+
+  // TODO fix it
+  {{ namespace }}MCExpr::VariantKind Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_CALL;
+  // if (Identifier.consume_back("@plt"))
+  //   Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_CALL_PLT;
+
+  MCSymbol *Sym = getContext().getOrCreateSymbol(Identifier);
+  Res = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
+  Res = {{ namespace }}MCExpr::create(Res, Kind, getContext());
+  Operands.push_back({{ namespace }}Operand::createImm(Res, S, E));
+  return ParseStatus::Success;
+}
+
 bool {{ namespace }}AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
   // Check if the current operand has a custom associated parser, if so, try to
   // custom parse the operand, or fallback to the general approach.
@@ -446,6 +505,22 @@ bool {{ namespace }}AsmParser::ParseInstruction(ParseInstructionInfo &Info, Stri
     getParser().eatToEndOfStatement();
     return true;
   }
+  return false;
+}
+
+bool {{ namespace }}AsmParser::classifySymbolRef(const MCExpr *Expr,
+                                       {{ namespace }}MCExpr::VariantKind &Kind) {
+  Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+
+  if (const {{ namespace }}MCExpr *RE = dyn_cast<{{ namespace }}MCExpr>(Expr)) {
+    Kind = RE->getKind();
+    Expr = RE->getSubExpr();
+  }
+
+  MCValue Res;
+  MCFixup Fixup;
+  if (Expr->evaluateAsRelocatable(Res, nullptr, &Fixup))
+    return Res.getRefKind() == {{ namespace }}MCExpr::VK_{{ namespace }}_None;
   return false;
 }
 

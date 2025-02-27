@@ -24,8 +24,10 @@ StringRef {{ namespace }}MCExpr::getVariantKindName(VariantKind Kind) {
     llvm_unreachable("Invalid ELF symbol kind");
   case VK_{{ namespace }}_None:
     return "";
-  case VK_{{ namespace }}_Symbol:
-    return "@Sym";
+  case VK_{{ namespace }}_CALL:  // TODO fix it
+    return "@CALL";
+  case VK_{{ namespace }}_SYMBOL:
+    return "@SYMBOL";
   }
 }
 
@@ -70,5 +72,23 @@ bool {{ namespace }}MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAsse
     }
   }
 
+  return true;
+}
+
+bool {{ namespace }}MCExpr::evaluateAsConstant(int64_t &Res) const
+{
+  MCValue Value;
+
+  if (Kind == VK_{{ namespace }}_CALL)  // TODO fix it
+    return false;
+
+  if (!getSubExpr()->evaluateAsRelocatable(Value, nullptr, nullptr))
+    return false;
+
+  if (!Value.isAbsolute())
+    return false;
+
+  // Res = evaluateAsInt64(Value.getConstant());
+  Res = Value.getConstant();
   return true;
 }
