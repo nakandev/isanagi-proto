@@ -61,49 +61,55 @@ bool
   uint64_t StackSize = MF.getFrameInfo().getStackSize();
   int64_t SpOffset = MF.getFrameInfo().getObjectOffset(FrameIndex);
 
-  // before:
-  //   lui  t0, imm_hi
-  //   addi t1, t0, imm_lo
-  //   add  dst, frame_addr, t1
-  // aftter:
-  //   lui  t0, imm_hi+off_hi
-  //   addi t1, t0, imm_lo+off_lo
-  //   add  dst, x2, t1
-  MachineInstr *Lui = nullptr;
-  MachineInstr *Addi = nullptr;
-  Register RegT1 = MI.getOperand(i+1).getReg();
-  Register RegT0;
-  auto II = MBBI.getReverse();
-  for (; II != MBB.rend(); II++) {
-    MachineInstr &MII = *II;
-    if (MII.getOpcode() == {{ Xpu }}::ADDI && MII.getOperand(0).getReg() == RegT1) {
-      Addi = &MII;
-      RegT0 = MII.getOperand(1).getReg();
-      break;
+  if (MI.getOpcode() == {{ Xpu }}::ADD) {
+    // before:
+    //   lui  t0, imm_hi
+    //   addi t1, t0, imm_lo
+    //   add  dst, frame_addr, t1
+    // aftter:
+    //   lui  t0, imm_hi+off_hi
+    //   addi t1, t0, imm_lo+off_lo
+    //   add  dst, x2, t1
+    MachineInstr *Lui = nullptr;
+    MachineInstr *Addi = nullptr;
+    Register RegT1 = MI.getOperand(i+1).getReg();
+    Register RegT0;
+    auto II = MBBI.getReverse();
+    for (; II != MBB.rend(); II++) {
+      MachineInstr &MII = *II;
+      if (MII.getOpcode() == {{ Xpu }}::ADDI && MII.getOperand(0).getReg() == RegT1) {
+        Addi = &MII;
+        RegT0 = MII.getOperand(1).getReg();
+        break;
+      }
     }
-  }
-  for (; II != MBB.rend(); II++) {
-    MachineInstr &MII = *II;
-    if (MII.getOpcode() == {{ Xpu }}::LUI && MII.getOperand(0).getReg() == RegT0) {
-      Lui = &MII;
-      break;
+    for (; II != MBB.rend(); II++) {
+      MachineInstr &MII = *II;
+      if (MII.getOpcode() == {{ Xpu }}::LUI && MII.getOperand(0).getReg() == RegT0) {
+        Lui = &MII;
+        break;
+      }
     }
+    assert ((Lui && Addi) && "FrameIndex should be converted to LUI & ADDI & ADD");
+
+    int64_t OldHi20 = Lui->getOperand(1).getImm();
+    int64_t OldLo12 = Addi->getOperand(2).getImm();
+    int64_t OldValue = (OldHi20 << 12) + OldLo12;
+
+    int64_t NewValue = SpOffset + (int64_t)StackSize;
+    NewValue += OldValue;
+
+    int64_t NewLo12 = SignExtend64<12>(NewValue);
+    int64_t NewHi20 = ((NewValue - NewLo12) >> 12);
+
+    Lui->getOperand(1).setImm(NewHi20);
+    Addi->getOperand(2).setImm(NewLo12);
+    MI.getOperand(i+0).ChangeToRegister(FrameReg, false);
+  } else {
+    // callseq_start, callseq_end
+    MI.getOperand(i+0).ChangeToRegister(FrameReg, false);
+    MI.getOperand(i+1).ChangeToImmediate(SpOffset);
   }
-  assert ((Lui && Addi) && "FrameIndex should be converted to LUI & ADDI & ADD");
-
-  int64_t OldHi20 = Lui->getOperand(1).getImm();
-  int64_t OldLo12 = Addi->getOperand(2).getImm();
-  int64_t OldValue = (OldHi20 << 12) + OldLo12;
-
-  int64_t NewValue = SpOffset + (int64_t)StackSize;
-  NewValue += OldValue;
-
-  int64_t NewLo12 = SignExtend64<12>(NewValue);
-  int64_t NewHi20 = ((NewValue - NewLo12) >> 12);
-
-  Lui->getOperand(1).setImm(NewHi20);
-  Addi->getOperand(2).setImm(NewLo12);
-  MI.getOperand(i+0).ChangeToRegister(FrameReg, false);
 
   return false;
 }

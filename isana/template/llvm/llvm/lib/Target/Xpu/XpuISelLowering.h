@@ -38,6 +38,9 @@ public:
                       const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
                       SelectionDAG &DAG) const override;
 
+  SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                    SmallVectorImpl<SDValue> &InVals) const override;
+
   // Provide custom lowering hooks for some operations.
   SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
 
@@ -51,9 +54,6 @@ public:
 private:
   // Control Instruction Selection Features
   // SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
-
-  SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
-                    SmallVectorImpl<SDValue> &InVals) const override;
 
   SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
 };

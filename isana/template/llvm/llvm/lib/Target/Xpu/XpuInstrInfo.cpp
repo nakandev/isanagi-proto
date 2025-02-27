@@ -2,6 +2,8 @@
 
 #include "{{ Xpu }}InstrInfo.h"
 #include "{{ Xpu }}.h"
+// #include "{{ Xpu }}MachineFunctionInfo.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "{{ Xpu }}Subtarget.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
@@ -17,7 +19,7 @@
 using namespace llvm;
 
 {{ Xpu }}InstrInfo::{{ Xpu }}InstrInfo({{ Xpu }}Subtarget &STI)
-    : {{ Xpu }}GenInstrInfo(/*{{ Xpu }}::ADJCALLSTACKDOWN, {{ Xpu }}::ADJCALLSTACKUP*/),
+    : {{ Xpu }}GenInstrInfo({{ Xpu }}::ADJCALLSTACKDOWN, {{ Xpu }}::ADJCALLSTACKUP),
       STI(STI) {}
 
 bool
@@ -99,4 +101,51 @@ void
         .addImm(0);
     return;
   }
+}
+
+void
+{{ Xpu }}InstrInfo::storeRegToStackSlot(
+  MachineBasicBlock &MBB,
+  MachineBasicBlock::iterator I,
+  Register SrcReg, bool IsKill, int FI,
+  const TargetRegisterClass *RC,
+  const TargetRegisterInfo *TRI,
+  Register VReg
+) const {
+  MachineFunction *MF = MBB.getParent();
+  MachineFrameInfo &MFI = MF->getFrameInfo();
+
+  unsigned Opcode = {{ Xpu }}::SW;
+  MachineMemOperand *MMO = MF->getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(*MF, FI), MachineMemOperand::MOStore,
+      MFI.getObjectSize(FI), MFI.getObjectAlign(FI));
+
+  BuildMI(MBB, I, DebugLoc(), get(Opcode))
+      .addReg(SrcReg, getKillRegState(IsKill))
+      .addFrameIndex(FI)
+      .addImm(0)
+      .addMemOperand(MMO);
+}
+
+void
+{{ Xpu }}InstrInfo::loadRegFromStackSlot(
+  MachineBasicBlock &MBB,
+  MachineBasicBlock::iterator I,
+  Register DstReg, int FI,
+  const TargetRegisterClass *RC,
+  const TargetRegisterInfo *TRI,
+  Register VReg
+) const {
+  MachineFunction *MF = MBB.getParent();
+  MachineFrameInfo &MFI = MF->getFrameInfo();
+
+  unsigned Opcode = {{ Xpu }}::LW;
+  MachineMemOperand *MMO = MF->getMachineMemOperand(
+      MachinePointerInfo::getFixedStack(*MF, FI), MachineMemOperand::MOLoad,
+      MFI.getObjectSize(FI), MFI.getObjectAlign(FI));
+
+  BuildMI(MBB, I, DebugLoc(), get(Opcode), DstReg)
+      .addFrameIndex(FI)
+      .addImm(0)
+      .addMemOperand(MMO);
 }

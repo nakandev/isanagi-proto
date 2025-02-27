@@ -4,6 +4,7 @@
 #include "{{ Xpu }}.h"
 #include "{{ Xpu }}Subtarget.h"
 #include "{{ Xpu }}TargetMachine.h"
+#include "MCTargetDesc/{{ Xpu }}BaseInfo.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -175,7 +176,142 @@ SDValue
   CallLoweringInfo &CLI,
   SmallVectorImpl<SDValue> &InVals
 ) const {
+  SelectionDAG &DAG = CLI.DAG;
+  SDLoc &DL = CLI.DL;
+  SmallVectorImpl<ISD::OutputArg> &Outs = CLI.Outs;
+  SmallVectorImpl<SDValue> &OutVals = CLI.OutVals;
+  SmallVectorImpl<ISD::InputArg> &Ins = CLI.Ins;
   SDValue Chain = CLI.Chain;
+  SDValue Callee = CLI.Callee;
+  bool &IsTailCall = CLI.IsTailCall;
+  CallingConv::ID CallConv = CLI.CallConv;
+  bool IsVarArg = CLI.IsVarArg;
+  EVT PtrVT = getPointerTy(DAG.getDataLayout());
+
+  MachineFunction &MF = DAG.getMachineFunction();
+
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState ArgCCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
+  ArgCCInfo.AnalyzeCallOperands(Outs, CC_{{ Xpu }}32);
+
+  unsigned NumBytes = ArgCCInfo.getStackSize();
+
+  if (!IsTailCall)
+    Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, CLI.DL);
+
+  SmallVector<std::pair<Register, SDValue>, 8> RegsToPass;
+  SmallVector<SDValue, 8> MemOpChains;
+  SDValue StackPtr;
+  for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+    CCValAssign &VA = ArgLocs[i];
+    SDValue Arg = OutVals[i];
+    MVT LocVT = VA.getLocVT();
+    // ISD::ArgFlagsTy Flags = Outs[OutIdx].Flags;
+
+    switch (VA.getLocInfo()) {
+      default: llvm_unreachable("Unknown loc info!");
+            break;
+      case CCValAssign::Full:
+            break;
+      case CCValAssign::SExt:
+            Arg = DAG.getNode(ISD::SIGN_EXTEND, DL, LocVT, Arg);
+            break;
+      case CCValAssign::ZExt:
+            Arg = DAG.getNode(ISD::ZERO_EXTEND, DL, LocVT, Arg);
+            break;
+      case CCValAssign::AExt:
+            Arg = DAG.getNode(ISD::ANY_EXTEND, DL, LocVT, Arg);
+            break;
+    }
+
+    if (VA.isRegLoc()) {
+      RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
+      continue;
+    }
+
+    assert(VA.isMemLoc() && "Argument not register or memory");
+    /* MemOpChains.push_back(passArgOnStack(...)); */ {
+      if (!IsTailCall) {
+        SDValue PtrOff =
+            DAG.getNode(ISD::ADD, DL, getPointerTy(DAG.getDataLayout()), StackPtr,
+                        DAG.getIntPtrConstant(VA.getLocMemOffset(), DL));
+        MemOpChains.push_back(DAG.getStore(Chain, DL, Arg, PtrOff, MachinePointerInfo()));
+      } else {
+        MachineFrameInfo &MFI = DAG.getMachineFunction().getFrameInfo();
+        int FI = MFI.CreateFixedObject(Arg.getValueSizeInBits() / 8, VA.getLocMemOffset(), false);
+        SDValue FIN = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+        MemOpChains.push_back(DAG.getStore(Chain, DL, Arg, FIN, MachinePointerInfo()));
+      }
+    }
+  }
+
+  if (!MemOpChains.empty())
+    Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, MemOpChains);
+
+  SDValue Glue;
+
+  // Build a sequence of copy-to-reg nodes, chained and glued together.
+  for (auto &Reg : RegsToPass) {
+    Chain = DAG.getCopyToReg(Chain, DL, Reg.first, Reg.second, Glue);
+    Glue = Chain.getValue(1);
+  }
+
+  if (GlobalAddressSDNode *S = dyn_cast<GlobalAddressSDNode>(Callee)) {
+    const GlobalValue *GV = S->getGlobal();
+    Callee = DAG.getTargetGlobalAddress(GV, DL, PtrVT, 0, {{ Xpu }}II::MO_CALL);
+  } else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee)) {
+    Callee = DAG.getTargetExternalSymbol(S->getSymbol(), PtrVT, {{ Xpu }}II::MO_CALL);
+  }
+
+  SmallVector<SDValue, 8> Ops;
+  /* getOpndList(...) */ {
+    Ops.push_back(Chain);
+    Ops.push_back(Callee);
+
+    for (auto &Reg : RegsToPass)
+      Ops.push_back(DAG.getRegister(Reg.first, Reg.second.getValueType()));
+
+    if (!IsTailCall) {
+      const TargetRegisterInfo *TRI = Subtarget.getRegisterInfo();
+      const uint32_t *Mask = TRI->getCallPreservedMask(MF, CallConv);
+      assert(Mask && "Missing call preserved mask for calling convention");
+      Ops.push_back(DAG.getRegisterMask(Mask));
+    }
+
+    if (Glue.getNode())
+      Ops.push_back(Glue);
+  }
+
+  // Emit the call.
+  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+
+  if (IsTailCall) {
+    // return DAG.getNode({{ Xpu }}ISD::TailCall, DL, MVT::Other, Ops);
+  }
+
+  Chain = DAG.getNode({{ Xpu }}ISD::CALL, DL, NodeTys, Ops);
+  Glue = Chain.getValue(1);
+
+  Chain = DAG.getCALLSEQ_END(Chain, NumBytes, 0, Glue, DL);
+  Glue = Chain.getValue(1);
+
+  /* return LowerCallResult(...); */ {
+    SmallVector<CCValAssign, 16> RVLocs;
+    CCState RetCCInfo(CallConv, IsVarArg, MF, RVLocs, *DAG.getContext());
+    RetCCInfo.AnalyzeCallResult(Ins, RetCC_{{ Xpu }}32);
+
+    for (unsigned i = 0; i != RVLocs.size(); ++i) {
+      SDValue Val = DAG.getCopyFromReg(Chain, DL, RVLocs[i].getLocReg(),
+                                      RVLocs[i].getLocVT(), Glue);
+      Chain = Val.getValue(1);
+      Glue = Val.getValue(2);
+
+      if (RVLocs[i].getValVT() != RVLocs[i].getLocVT())
+        Val = DAG.getNode(ISD::BITCAST, DL, RVLocs[i].getValVT(), Val);
+
+      InVals.push_back(Val);
+    }
+  }
   return Chain;
 }
 

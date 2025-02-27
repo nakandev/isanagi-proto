@@ -154,7 +154,7 @@ def : StorePattern<truncstorei16, SH, GPR>;
 def : StorePattern<store        , SW, GPR>;
 
 //== Branch/Jump Pattern
-def PseudoBR: CustomXPUInst<
+def PseudoBR: {{ Xpu }}Inst<
   (outs), (ins BrImmS20O1:$imm),
   "",
   [(br bb:$imm)]>,
@@ -183,7 +183,7 @@ def : Pat<(brcond (i32 (setule GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLTU GPR:$r
 def : Pat<(brcond (i32 (setge  GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLT  GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
 def : Pat<(brcond (i32 (setuge GPR:$lhs, GPR:$rhs)), bb:$dst), (BEQ (SLTU GPR:$lhs, GPR:$rhs), X0, BrImmS12O1:$dst)>;
 
-def PseudoBRIND: CustomXPUInst<
+def PseudoBRIND: {{ Xpu }}Inst<
   (outs), (ins GPR:$rs1, ImmS12:$imm),
   "",
   []>,
@@ -199,11 +199,11 @@ def PseudoBRIND: CustomXPUInst<
 def : Pat<(brind GPR:$rs1), (PseudoBRIND GPR:$rs1, 0)>;
 def : Pat<(brind (add GPR:$rs1, ImmS12:$imm)), (PseudoBRIND GPR:$rs1, ImmS12:$imm)>;
 
-def SDT_CustomXPUSelectCC : SDTypeProfile<1, 5, [SDTCisSameAs<1, 2>,
+def SDT_{{ Xpu }}SelectCC : SDTypeProfile<1, 5, [SDTCisSameAs<1, 2>,
                                                  SDTCisSameAs<0, 4>,
                                                  SDTCisSameAs<4, 5>]>;
-def SelectCC : SDNode<"CustomXPUISD::SELECT_CC", SDT_CustomXPUSelectCC, [SDNPInGlue]>;
-def Select_GPR : CustomXPUInst<
+def SelectCC : SDNode<"{{ Xpu }}ISD::SELECT_CC", SDT_{{ Xpu }}SelectCC, [SDNPInGlue]>;
+def Select_GPR : {{ Xpu }}Inst<
   (outs GPR:$dst), (ins GPR:$lhs, GPR:$rhs, ImmS12:$imm, GPR:$truev, GPR:$falsev),
   "",
   [(set GPR:$dst, (SelectCC GPR:$lhs, GPR:$rhs, (i32 imm:$imm), GPR:$truev, GPR:$falsev))]>
@@ -214,3 +214,63 @@ def Select_GPR : CustomXPUInst<
 }
 def : Pat<(SelectCC GPR:$lhs, 0, (i32 imm:$imm), GPR:$truev, GPR:$falsev),
           (Select_GPR GPR:$lhs, X0, imm:$imm, GPR:$truev, GPR:$falsev)>;
+
+//=== Function Call Pattern
+def SDT_{{ Xpu }}Call : SDTypeProfile<0, -1, [SDTCisVT<0, iPTR>]>;
+
+def {{ xpu }}_call : SDNode<"{{ Xpu }}ISD::CALL", SDT_{{ Xpu }}Call,
+  [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
+  SDNPVariadic]>;
+
+def SDT_CallSeqStart : SDCallSeqStart<[SDTCisVT<0, i32>,
+  SDTCisVT<1, i32>]>;
+def SDT_CallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i32>,
+  SDTCisVT<1, i32>]>;
+
+def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_CallSeqStart,
+  [SDNPHasChain, SDNPOutGlue]>;
+def callseq_end   : SDNode<"ISD::CALLSEQ_END", SDT_CallSeqEnd,
+  [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
+
+def ADJCALLSTACKDOWN : {{ Xpu }}Inst<(outs), (ins ImmS12:$amt1, ImmS12:$amt2),
+  "",
+  [(callseq_start timm:$amt1, timm:$amt2)]>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let Defs = [X2];
+  let Uses = [X2];
+  let hasSideEffects = 1;
+}
+def ADJCALLSTACKUP   : {{ Xpu }}Inst<(outs), (ins ImmS12:$amt1, ImmS12:$amt2),
+  "",
+  [(callseq_end timm:$amt1, timm:$amt2)]>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let Defs = [X2];
+  let Uses = [X2];
+  let hasSideEffects = 1;
+}
+
+def CallSymbol : AsmOperandClass {
+  let Name = "CallSymbol";
+  let RenderMethod = "addImmOperands";
+  let DiagnosticType = "InvalidCallSymbol";
+  let ParserMethod = "parseCallSymbol";
+}
+def call_symbol : Operand<iPTR> {
+  let ParserMatchClass = CallSymbol;
+}
+def PseudoCALL : {{ Xpu }}Inst<(outs), (ins call_symbol:$func),
+  "jal x1, $func",
+  []>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 0; // be careful
+  let isCall = 1;
+  let Defs = [X1];
+  //let Size = 8;
+}
+def : Pat<({{ xpu }}_call tglobaladdr:$func), (PseudoCALL tglobaladdr:$func)>;
+def : Pat<({{ xpu }}_call texternalsym:$func), (PseudoCALL texternalsym:$func)>;

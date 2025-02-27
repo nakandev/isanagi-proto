@@ -65,3 +65,24 @@ void {{ Xpu }}FrameLowering::determineCalleeSaves(
 ) const {
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
 }
+
+MachineBasicBlock::iterator
+{{ Xpu }}FrameLowering::eliminateCallFramePseudoInstr(
+  MachineFunction &MF, MachineBasicBlock &MBB,
+  MachineBasicBlock::iterator MBBI
+) const {
+  const auto &TII = *static_cast<const {{ Xpu }}InstrInfo *>(STI.getInstrInfo());
+
+  if (!hasReservedCallFrame(MF)) {
+    int64_t Amount = MBBI->getOperand(0).getImm();
+
+    if (MBBI->getOpcode() == {{ Xpu }}::ADJCALLSTACKDOWN)
+      Amount = -Amount;
+
+    Register DstReg = {{ Xpu }}::X2;
+    Register SrcReg = {{ Xpu }}::X2;
+    TII.addImmediate(DstReg, SrcReg, Amount, MBB, MBBI);
+  }
+
+  return MBB.erase(MBBI);
+}
