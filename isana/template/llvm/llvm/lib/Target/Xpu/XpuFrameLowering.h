@@ -1,16 +1,16 @@
-//===-- {{ namespace }}FrameLowering.h - Define frame lowering for {{ namespace }} -*- C++ -*--===//
+//===-- {{ Xpu }}FrameLowering.h - Define frame lowering for {{ Xpu }} -*- C++ -*--===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}FRAMELOWERING_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}FRAMELOWERING_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}FRAMELOWERING_H
+#define LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}FRAMELOWERING_H
 
 #include "llvm/CodeGen/TargetFrameLowering.h"
 
 namespace llvm {
-class {{ namespace }}Subtarget;
+class {{ Xpu }}Subtarget;
 
-class {{ namespace }}FrameLowering : public TargetFrameLowering {
+class {{ Xpu }}FrameLowering : public TargetFrameLowering {
 public:
-  explicit {{ namespace }}FrameLowering(const {{ namespace }}Subtarget &STI)
+  explicit {{ Xpu }}FrameLowering(const {{ Xpu }}Subtarget &STI)
       : TargetFrameLowering(StackGrowsDown, Align(8), 0), STI(STI) {}
 
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
@@ -27,7 +27,7 @@ public:
   }
 
 protected:
-  const {{ namespace }}Subtarget &STI;
+  const {{ Xpu }}Subtarget &STI;
 };
 }
 #endif

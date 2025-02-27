@@ -1,9 +1,9 @@
-//===-- {{ namespace }}ISelLowering.cpp - {{ namespace }} DAG Lowering Implementation -*- C++ -*-===//
+//===-- {{ Xpu }}ISelLowering.cpp - {{ Xpu }} DAG Lowering Implementation -*- C++ -*-===//
 
-#include "{{ namespace }}ISelLowering.h"
-#include "{{ namespace }}.h"
-#include "{{ namespace }}Subtarget.h"
-#include "{{ namespace }}TargetMachine.h"
+#include "{{ Xpu }}ISelLowering.h"
+#include "{{ Xpu }}.h"
+#include "{{ Xpu }}Subtarget.h"
+#include "{{ Xpu }}TargetMachine.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -20,16 +20,16 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-lower"
+#define DEBUG_TYPE "{{ xpu }}-lower"
 
-{{ namespace }}TargetLowering::{{ namespace }}TargetLowering(const TargetMachine &TM,
-                                                 const {{ namespace }}Subtarget &STI)
+{{ Xpu }}TargetLowering::{{ Xpu }}TargetLowering(const TargetMachine &TM,
+                                                 const {{ Xpu }}Subtarget &STI)
     : TargetLowering(TM), Subtarget(STI) {
 
   MVT XLenVT = Subtarget.getXLenVT();
 
   // Set up the register classes.
-  addRegisterClass(MVT::i32, &{{ namespace }}::GPRRegClass);
+  addRegisterClass(MVT::i32, &{{ Xpu }}::GPRRegClass);
 
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
@@ -57,10 +57,10 @@ addLiveIn(MachineFunction &MF, unsigned PReg, const TargetRegisterClass *RC)
 }
 
 // Calling Convention Implementation
-#include "{{ namespace }}GenCallingConv.inc"
+#include "{{ Xpu }}GenCallingConv.inc"
 
 SDValue
-{{ namespace }}TargetLowering::LowerFormalArguments(
+{{ Xpu }}TargetLowering::LowerFormalArguments(
   SDValue Chain,
   CallingConv::ID CallConv,
   bool IsVarArg,
@@ -76,7 +76,7 @@ SDValue
 
   SmallVector<CCValAssign, 16> ArgLocs;
   CCState CCInfo(CallConv, IsVarArg, DAG.getMachineFunction(), ArgLocs, *DAG.getContext());
-  CCInfo.AnalyzeFormalArguments(Ins, CC_{{ namespace }}32);
+  CCInfo.AnalyzeFormalArguments(Ins, CC_{{ Xpu }}32);
 
   for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
     CCValAssign &VA = ArgLocs[i];
@@ -128,7 +128,7 @@ SDValue
 }
 
 SDValue
-{{ namespace }}TargetLowering::LowerReturn(
+{{ Xpu }}TargetLowering::LowerReturn(
   SDValue Chain,
   CallingConv::ID CallConv,
   bool IsVarArg,
@@ -141,7 +141,7 @@ SDValue
   SmallVector<CCValAssign, 16> RVLocs;
 
   CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, *DAG.getContext());
-  CCInfo.AnalyzeReturn(Outs, RetCC_{{ namespace }}32);
+  CCInfo.AnalyzeReturn(Outs, RetCC_{{ Xpu }}32);
 
   SDValue Glue;
   SmallVector<SDValue, 4> RetOps(1, Chain);
@@ -166,12 +166,12 @@ SDValue
   if (Glue.getNode())
     RetOps.push_back(Glue);
 
-  return DAG.getNode({{ namespace }}ISD::RET_GLUE, DL, MVT::Other,
+  return DAG.getNode({{ Xpu }}ISD::RET_GLUE, DL, MVT::Other,
                      RetOps);
 }
 
 SDValue
-{{ namespace }}TargetLowering::LowerCall(
+{{ Xpu }}TargetLowering::LowerCall(
   CallLoweringInfo &CLI,
   SmallVectorImpl<SDValue> &InVals
 ) const {
@@ -180,7 +180,7 @@ SDValue
 }
 
 SDValue
-{{ namespace }}TargetLowering::LowerOperation(
+{{ Xpu }}TargetLowering::LowerOperation(
   SDValue Op,
   SelectionDAG &DAG
 ) const {
@@ -193,7 +193,7 @@ SDValue
 }
 
 SDValue
-{{ namespace }}TargetLowering::lowerSELECT(
+{{ Xpu }}TargetLowering::lowerSELECT(
   SDValue Op,
   SelectionDAG &DAG
 ) const {
@@ -211,28 +211,28 @@ SDValue
 
   SDValue Ops[] = {CondV, Zero, SetNE, TrueV, FalseV};
 
-  return DAG.getNode({{ namespace }}ISD::SELECT_CC, DL, VT, Ops);
+  return DAG.getNode({{ Xpu }}ISD::SELECT_CC, DL, VT, Ops);
 }
 
 const char *
-{{ namespace }}TargetLowering::getTargetNodeName(
+{{ Xpu }}TargetLowering::getTargetNodeName(
   unsigned Opcode
 ) const {
-  switch (({{ namespace }}ISD::NodeType)Opcode) {
-  case {{ namespace }}ISD::FIRST_NUMBER:
+  switch (({{ Xpu }}ISD::NodeType)Opcode) {
+  case {{ Xpu }}ISD::FIRST_NUMBER:
     break;
-  case {{ namespace }}ISD::RET_GLUE:
-    return "{{ namespace }}ISD::RET_GLUE";
-  case {{ namespace }}ISD::CALL:
-    return "{{ namespace }}ISD::CALL";
-  case {{ namespace }}ISD::SELECT_CC:
-    return "{{ namespace }}ISD::SELECT_CC";
-  case {{ namespace }}ISD::BR_CC:
-    return "{{ namespace }}ISD::BR_CC";
-  case {{ namespace }}ISD::Wrapper:
-    return "{{ namespace }}ISD::Wrapper";
-  case {{ namespace }}ISD::MEMCPY:
-    return "{{ namespace }}ISD::MEMCPY";
+  case {{ Xpu }}ISD::RET_GLUE:
+    return "{{ Xpu }}ISD::RET_GLUE";
+  case {{ Xpu }}ISD::CALL:
+    return "{{ Xpu }}ISD::CALL";
+  case {{ Xpu }}ISD::SELECT_CC:
+    return "{{ Xpu }}ISD::SELECT_CC";
+  case {{ Xpu }}ISD::BR_CC:
+    return "{{ Xpu }}ISD::BR_CC";
+  case {{ Xpu }}ISD::Wrapper:
+    return "{{ Xpu }}ISD::Wrapper";
+  case {{ Xpu }}ISD::MEMCPY:
+    return "{{ Xpu }}ISD::MEMCPY";
   }
   return nullptr;
 }
@@ -243,24 +243,24 @@ getBranchOpcodeForIntCondCode (ISD::CondCode CC) {
   default:
     llvm_unreachable("Unsupported CondCode");
   case ISD::SETEQ:
-    return {{ namespace }}::BEQ;
+    return {{ Xpu }}::BEQ;
   case ISD::SETNE:
-    return {{ namespace }}::BNE;
+    return {{ Xpu }}::BNE;
   case ISD::SETLT:
-    return {{ namespace }}::BLT;
+    return {{ Xpu }}::BLT;
   case ISD::SETGE:
-    return {{ namespace }}::BGE;
+    return {{ Xpu }}::BGE;
   case ISD::SETULT:
-    return {{ namespace }}::BLTU;
+    return {{ Xpu }}::BLTU;
   case ISD::SETUGE:
-    return {{ namespace }}::BGEU;
+    return {{ Xpu }}::BGEU;
   }
 }
 
 static MachineBasicBlock *emitSelectPseudo(
   MachineInstr &MI,
   MachineBasicBlock *BB,
-  const {{ namespace }}Subtarget &Subtarget
+  const {{ Xpu }}Subtarget &Subtarget
 ) {
   const TargetInstrInfo &TII = *Subtarget.getInstrInfo();
   const BasicBlock *LLVM_BB = BB->getBasicBlock();
@@ -295,7 +295,7 @@ static MachineBasicBlock *emitSelectPseudo(
   IfFalseMBB->addSuccessor(TailMBB);
 
   // %Result = phi [ %TrueValue, HeadMBB ], [ %FalseValue, IfFalseMBB ]
-  BuildMI(*TailMBB, TailMBB->begin(), DL, TII.get({{ namespace }}::PHI),
+  BuildMI(*TailMBB, TailMBB->begin(), DL, TII.get({{ Xpu }}::PHI),
           MI.getOperand(0).getReg())
       .addReg(MI.getOperand(4).getReg())
       .addMBB(HeadMBB)
@@ -307,14 +307,14 @@ static MachineBasicBlock *emitSelectPseudo(
 }
 
 MachineBasicBlock *
-{{ namespace }}TargetLowering::EmitInstrWithCustomInserter(
+{{ Xpu }}TargetLowering::EmitInstrWithCustomInserter(
   MachineInstr &MI,
   MachineBasicBlock *BB
 ) const {
   switch (MI.getOpcode()) {
   default:
     llvm_unreachable("Unexpected instr type to insert");
-  case {{ namespace }}::Select_GPR:
+  case {{ Xpu }}::Select_GPR:
     return emitSelectPseudo(MI, BB, Subtarget);
   }
 }

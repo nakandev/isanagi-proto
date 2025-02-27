@@ -1,19 +1,19 @@
-//===-- {{ namespace }}.h - Top-level interface for {{ namespace }} representation --*- C++ -*-===//
+//===-- {{ Xpu }}.h - Top-level interface for {{ Xpu }} representation --*- C++ -*-===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}_H
+#define LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}_H
 
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-class {{ namespace }}TargetMachine;
+class {{ Xpu }}TargetMachine;
 class FunctionPass;
 class PassRegistry;
 
-FunctionPass *create{{ namespace }}ISelDag({{ namespace }}TargetMachine &TM,
+FunctionPass *create{{ Xpu }}ISelDag({{ Xpu }}TargetMachine &TM,
                                 CodeGenOptLevel OptLevel);
-void initialize{{ namespace }}DAGToDAGISelLegacyPass(PassRegistry &);
+void initialize{{ Xpu }}DAGToDAGISelLegacyPass(PassRegistry &);
 } // namespace llvm
 
 #endif

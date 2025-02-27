@@ -1,23 +1,23 @@
-//===- {{ namespace }}AsmBackend.h - {{ namespace }} Assembler Backend -===//
+//===- {{ Xpu }}AsmBackend.h - {{ Xpu }} Assembler Backend -===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}ASMBACKEND_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}ASMBACKEND_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}ASMBACKEND_H
+#define LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}ASMBACKEND_H
 
-#include "MCTargetDesc/{{ namespace }}FixupKinds.h"
+#include "MCTargetDesc/{{ Xpu }}FixupKinds.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCTargetOptions.h"
 
 namespace llvm {
 
-class {{ namespace }}AsmBackend : public MCAsmBackend {
+class {{ Xpu }}AsmBackend : public MCAsmBackend {
 
 public:
-  {{ namespace }}AsmBackend(const MCSubtargetInfo &STI, const MCTargetOptions &OP)
+  {{ Xpu }}AsmBackend(const MCSubtargetInfo &STI, const MCTargetOptions &OP)
       : MCAsmBackend(llvm::endianness::little) {}
 
   unsigned int getNumFixupKinds() const override {
-    return {{ namespace }}::NumTargetFixupKinds;
+    return {{ Xpu }}::NumTargetFixupKinds;
   }
 
   void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
@@ -54,4 +54,4 @@ public:
 };
 } // namespace llvm
 
-#endif // LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}ASMBACKEND_H
+#endif // LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}ASMBACKEND_H

@@ -1,23 +1,23 @@
-add_llvm_component_library(LLVM{{ namespace }}Desc
-  {{ namespace }}AsmBackend.cpp
-  # {{ namespace }}BaseInfo.cpp
-  {{ namespace }}ELFObjectWriter.cpp
-  {{ namespace }}InstPrinter.cpp
-  {{ namespace }}MCAsmInfo.cpp
-  {{ namespace }}MCCodeEmitter.cpp
-  {{ namespace }}MCExpr.cpp
-  # {{ namespace }}MCObjectFileInfo.cpp
-  {{ namespace }}MCTargetDesc.cpp
-  # {{ namespace }}MatInt.cpp
-  # {{ namespace }}TargetStreamer.cpp
-  # {{ namespace }}ELFStreamer.cpp
+add_llvm_component_library(LLVM{{ Xpu }}Desc
+  {{ Xpu }}AsmBackend.cpp
+  # {{ Xpu }}BaseInfo.cpp
+  {{ Xpu }}ELFObjectWriter.cpp
+  {{ Xpu }}InstPrinter.cpp
+  {{ Xpu }}MCAsmInfo.cpp
+  {{ Xpu }}MCCodeEmitter.cpp
+  {{ Xpu }}MCExpr.cpp
+  # {{ Xpu }}MCObjectFileInfo.cpp
+  {{ Xpu }}MCTargetDesc.cpp
+  # {{ Xpu }}MatInt.cpp
+  # {{ Xpu }}TargetStreamer.cpp
+  # {{ Xpu }}ELFStreamer.cpp
 
   LINK_COMPONENTS
   MC
-  {{ namespace }}Info
+  {{ Xpu }}Info
   Support
   TargetParser
 
   ADD_TO_COMPONENT
-  {{ namespace }}
+  {{ Xpu }}
 )

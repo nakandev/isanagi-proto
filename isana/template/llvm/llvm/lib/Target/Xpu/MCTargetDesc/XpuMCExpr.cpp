@@ -1,7 +1,7 @@
-//===- {{ namespace }}MCExpr.cpp - {{ namespace }} specific MC expression classes -===//
+//===- {{ Xpu }}MCExpr.cpp - {{ Xpu }} specific MC expression classes -===//
 
-#include "{{ namespace }}FixupKinds.h"
-#include "{{ namespace }}MCExpr.h"
+#include "{{ Xpu }}FixupKinds.h"
+#include "{{ Xpu }}MCExpr.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
@@ -11,49 +11,49 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-mc-expr"
+#define DEBUG_TYPE "{{ xpu }}-mc-expr"
 
-const {{ namespace }}MCExpr *{{ namespace }}MCExpr::create(const MCExpr *Expr, VariantKind Kind,
+const {{ Xpu }}MCExpr *{{ Xpu }}MCExpr::create(const MCExpr *Expr, VariantKind Kind,
                                      MCContext &Ctx) {
-  return new (Ctx) {{ namespace }}MCExpr(Kind, Expr);
+  return new (Ctx) {{ Xpu }}MCExpr(Kind, Expr);
 }
 
-StringRef {{ namespace }}MCExpr::getVariantKindName(VariantKind Kind) {
+StringRef {{ Xpu }}MCExpr::getVariantKindName(VariantKind Kind) {
   switch (Kind) {
   default:
     llvm_unreachable("Invalid ELF symbol kind");
-  case VK_{{ namespace }}_None:
+  case VK_{{ Xpu }}_None:
     return "";
-  case VK_{{ namespace }}_CALL:  // TODO fix it
+  case VK_{{ Xpu }}_CALL:  // TODO fix it
     return "@CALL";
-  case VK_{{ namespace }}_SYMBOL:
+  case VK_{{ Xpu }}_SYMBOL:
     return "@SYMBOL";
   }
 }
 
-void {{ namespace }}MCExpr::visitUsedExpr(MCStreamer &Streamer) const {
+void {{ Xpu }}MCExpr::visitUsedExpr(MCStreamer &Streamer) const {
   Streamer.visitUsedExpr(*getSubExpr());
 }
 
-void {{ namespace }}MCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
+void {{ Xpu }}MCExpr::printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const {
   Expr->print(OS, MAI);
   OS << getVariantKindName(getKind());
 }
 
-void {{ namespace }}MCExpr::fixELFSymbolsInTLSFixups(MCAssembler &Asm) const {
+void {{ Xpu }}MCExpr::fixELFSymbolsInTLSFixups(MCAssembler &Asm) const {
   switch (getKind()) {
   default:
     return;
-  // case VK_{{ namespace }}_TLSLE:
-  // case VK_{{ namespace }}_TLSIE:
-  // case VK_{{ namespace }}_TLSGD:
+  // case VK_{{ Xpu }}_TLSLE:
+  // case VK_{{ Xpu }}_TLSIE:
+  // case VK_{{ Xpu }}_TLSGD:
   //   break;
   }
 
   // fixELFSymbolsInTLSFixupsImpl(getSubExpr(), Asm);
 }
 
-bool {{ namespace }}MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
+bool {{ Xpu }}MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
                                            const MCFixup *Fixup) const {
   if (!getSubExpr()->evaluateAsRelocatable(Res, Asm, Fixup))
     return false;
@@ -63,11 +63,11 @@ bool {{ namespace }}MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAsse
     switch (getKind()) {
     default:
       return true;
-    // case VK_{{ namespace }}_GOT:
-    // case VK_{{ namespace }}_GOTPC:
-    // case VK_{{ namespace }}_GOTOFF:
-    // case VK_{{ namespace }}_PLT:
-    // case VK_{{ namespace }}_TLSIE:
+    // case VK_{{ Xpu }}_GOT:
+    // case VK_{{ Xpu }}_GOTPC:
+    // case VK_{{ Xpu }}_GOTOFF:
+    // case VK_{{ Xpu }}_PLT:
+    // case VK_{{ Xpu }}_TLSIE:
     //   return false;
     }
   }
@@ -75,11 +75,11 @@ bool {{ namespace }}MCExpr::evaluateAsRelocatableImpl(MCValue &Res, const MCAsse
   return true;
 }
 
-bool {{ namespace }}MCExpr::evaluateAsConstant(int64_t &Res) const
+bool {{ Xpu }}MCExpr::evaluateAsConstant(int64_t &Res) const
 {
   MCValue Value;
 
-  if (Kind == VK_{{ namespace }}_CALL)  // TODO fix it
+  if (Kind == VK_{{ Xpu }}_CALL)  // TODO fix it
     return false;
 
   if (!getSubExpr()->evaluateAsRelocatable(Value, nullptr, nullptr))

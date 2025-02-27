@@ -1,8 +1,8 @@
-//===- {{ namespace }}MCCodeEmitter.cpp - Convert {{ namespace }} code to machine code -===//
+//===- {{ Xpu }}MCCodeEmitter.cpp - Convert {{ Xpu }} code to machine code -===//
 
-#include "MCTargetDesc/{{ namespace }}FixupKinds.h"
-#include "MCTargetDesc/{{ namespace }}MCExpr.h"
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
+#include "MCTargetDesc/{{ Xpu }}FixupKinds.h"
+#include "MCTargetDesc/{{ Xpu }}MCExpr.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCContext.h"
@@ -23,19 +23,19 @@ using namespace llvm;
 
 namespace {
 
-class {{ namespace }}MCCodeEmitter : public MCCodeEmitter {
+class {{ Xpu }}MCCodeEmitter : public MCCodeEmitter {
   const MCInstrInfo &MCII;
   const MCRegisterInfo &MRI;
   bool IsBigEndian;
   bool Is64Bit;
 
 public:
-  {{ namespace }}MCCodeEmitter(const MCInstrInfo &mcii, const MCRegisterInfo &mri,
+  {{ Xpu }}MCCodeEmitter(const MCInstrInfo &mcii, const MCRegisterInfo &mri,
                    bool IsBigEndian, bool Is64Bit)
       : MCII(mcii), MRI(mri), IsBigEndian(IsBigEndian), Is64Bit(Is64Bit) { }
-  {{ namespace }}MCCodeEmitter(const {{ namespace }}MCCodeEmitter &) = delete;
-  void operator=(const {{ namespace }}MCCodeEmitter &) = delete;
-  ~{{ namespace }}MCCodeEmitter() override = default;
+  {{ Xpu }}MCCodeEmitter(const {{ Xpu }}MCCodeEmitter &) = delete;
+  void operator=(const {{ Xpu }}MCCodeEmitter &) = delete;
+  ~{{ Xpu }}MCCodeEmitter() override = default;
 
   // getBinaryCodeForInstr - TableGen'erated function for getting the
   // binary encoding for an instruction.
@@ -71,16 +71,16 @@ public:
 } // end anonymous namespace
 
 MCCodeEmitter *
-llvm::create{{ namespace }}MCCodeEmitter(
+llvm::create{{ Xpu }}MCCodeEmitter(
   const MCInstrInfo &MCII,
   MCContext &Ctx
 )
 {
-  return new {{ namespace }}MCCodeEmitter(MCII, *Ctx.getRegisterInfo(), false, false);
+  return new {{ Xpu }}MCCodeEmitter(MCII, *Ctx.getRegisterInfo(), false, false);
 }
 
 void
-{{ namespace }}MCCodeEmitter::expandFunctionCall(
+{{ Xpu }}MCCodeEmitter::expandFunctionCall(
   const MCInst &MI,
   SmallVectorImpl<char> &CB,
   SmallVectorImpl<MCFixup> &Fixups,
@@ -91,9 +91,9 @@ void
   MCRegister Ra;
   uint32_t Binary;
 
-  if (MI.getOpcode() == {{ namespace }}::PseudoCALL) {
+  if (MI.getOpcode() == {{ Xpu }}::PseudoCALL) {
     Func = MI.getOperand(0);
-    Ra = {{ namespace }}::X1;
+    Ra = {{ Xpu }}::X1;
   }
 
   assert(Func.isExpr() && "Expected expression");
@@ -105,24 +105,24 @@ void
   //  auipc x1, $func | auipc x1, 0
   //                  |   + fixup:pc_rel
   //  jalr x1, x1, 0  | jalr x1, x1, 0
-  TmpInst = MCInstBuilder({{ namespace }}::AUIPC).addReg(Ra).addExpr(CallExpr);
+  TmpInst = MCInstBuilder({{ Xpu }}::AUIPC).addReg(Ra).addExpr(CallExpr);
   Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
   support::endian::write(CB, Binary, llvm::endianness::little);
 
-  TmpInst = MCInstBuilder({{ namespace }}::JALR).addReg(Ra).addReg(Ra).addImm(0);
+  TmpInst = MCInstBuilder({{ Xpu }}::JALR).addReg(Ra).addReg(Ra).addImm(0);
   Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
   support::endian::write(CB, Binary, llvm::endianness::little);
 #endif
   // short jump
   // jal x1, $func    | jal x1, 0
   //                  |   + fixup:pc_rel
-  TmpInst = MCInstBuilder({{ namespace }}::JAL).addReg(Ra).addExpr(CallExpr);
+  TmpInst = MCInstBuilder({{ Xpu }}::JAL).addReg(Ra).addExpr(CallExpr);
   Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
   support::endian::write(CB, Binary, llvm::endianness::little);
 }
 
 unsigned
-{{ namespace }}MCCodeEmitter::getMachineOpValue(
+{{ Xpu }}MCCodeEmitter::getMachineOpValue(
   const MCInst &MI,
   const MCOperand &MO,
   SmallVectorImpl<MCFixup> &Fixups,
@@ -137,19 +137,19 @@ unsigned
   // llvm_unreachable("Unhandled expression!");
   const MCExpr *Expr = MO.getExpr();
   MCExpr::ExprKind Kind = Expr->getKind();
-  {{ namespace }}::Fixups FixupKind = {{ namespace }}::fixup_{{ namespace.lower() }}_invalid;
+  {{ Xpu }}::Fixups FixupKind = {{ Xpu }}::fixup_{{ xpu }}_invalid;
   if (Kind == MCExpr::Target) {
-    const {{ namespace }}MCExpr *XExpr = cast<{{ namespace }}MCExpr>(Expr);
+    const {{ Xpu }}MCExpr *XExpr = cast<{{ Xpu }}MCExpr>(Expr);
     switch (XExpr->getKind()) {
     default:
       break;
-    case {{ namespace }}MCExpr::VK_{{ namespace }}_None:
-    case {{ namespace }}MCExpr::VK_{{ namespace }}_Invalid:
+    case {{ Xpu }}MCExpr::VK_{{ Xpu }}_None:
+    case {{ Xpu }}MCExpr::VK_{{ Xpu }}_Invalid:
       llvm_unreachable("Unhandled fixup kind!");
-    case {{ namespace }}MCExpr::VK_{{ namespace }}_CALL:
-          FixupKind = {{ namespace }}::fixup_{{ namespace.lower() }}_pc_rel_1;  // TODO fix it
-    case {{ namespace }}MCExpr::VK_{{ namespace }}_SYMBOL:
-      // FixupKind = {{ namespace }}::fixup_{{ namespace.lower() }}_other_imm_0;  // TODO this is trial.
+    case {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL:
+          FixupKind = {{ Xpu }}::fixup_{{ xpu }}_pc_rel_1;  // TODO fix it
+    case {{ Xpu }}MCExpr::VK_{{ Xpu }}_SYMBOL:
+      // FixupKind = {{ Xpu }}::fixup_{{ xpu }}_other_imm_0;  // TODO this is trial.
       {
         unsigned Opcode = MI.getOpcode();
         switch (Opcode) {
@@ -157,8 +157,8 @@ unsigned
           break;
         {% for fx in fixup_relocs -%}
         {% for instr in fx.instrs -%}
-        case {{ namespace }}::{{ instr.__class__.__name__.upper() }}:
-        {% endfor %}  FixupKind = {{ namespace }}::{{ fx.name_enum}};
+        case {{ Xpu }}::{{ instr.__class__.__name__.upper() }}:
+        {% endfor %}  FixupKind = {{ Xpu }}::{{ fx.name_enum}};
           break;
         {% endfor -%}
         }
@@ -175,14 +175,14 @@ unsigned
         break;
       {% for fx in fixup_relocs -%}
       {% for instr in fx.instrs -%}
-      case {{ namespace }}::{{ instr.__class__.__name__.upper() }}:
-      {% endfor %}  FixupKind = {{ namespace }}::{{ fx.name_enum}};
+      case {{ Xpu }}::{{ instr.__class__.__name__.upper() }}:
+      {% endfor %}  FixupKind = {{ Xpu }}::{{ fx.name_enum}};
         break;
       {% endfor -%}
       }
   }
 
-  assert(FixupKind != {{ namespace }}::fixup_{{ namespace.lower() }}_invalid && "Unhandled expression!");
+  assert(FixupKind != {{ Xpu }}::fixup_{{ xpu }}_invalid && "Unhandled expression!");
 
   Fixups.push_back(
       MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
@@ -191,7 +191,7 @@ unsigned
 
 template <unsigned S>
 unsigned
-{{ namespace }}MCCodeEmitter::getImmOpValueRShift(
+{{ Xpu }}MCCodeEmitter::getImmOpValueRShift(
   const MCInst &MI, unsigned OpNo,
   SmallVectorImpl<MCFixup> &Fixups,
   const MCSubtargetInfo &STI
@@ -207,7 +207,7 @@ unsigned
 }
 
 void
-{{ namespace }}MCCodeEmitter::encodeInstruction(
+{{ Xpu }}MCCodeEmitter::encodeInstruction(
   const MCInst &MI,
   SmallVectorImpl<char> &CB,
   SmallVectorImpl<MCFixup> &Fixups,
@@ -250,4 +250,4 @@ void
   }
 }
 
-#include "{{ namespace }}GenMCCodeEmitter.inc"
+#include "{{ Xpu }}GenMCCodeEmitter.inc"

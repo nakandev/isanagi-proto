@@ -1,15 +1,15 @@
-//===-- {{ namespace }}ISelLowering.h - {{ namespace }} DAG Lowering Interface -*- C++ -*-===//
+//===-- {{ Xpu }}ISelLowering.h - {{ Xpu }} DAG Lowering Interface -*- C++ -*-===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}ISELLOWERING_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}ISELLOWERING_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}ISELLOWERING_H
+#define LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}ISELLOWERING_H
 
-#include "{{ namespace }}.h"
+#include "{{ Xpu }}.h"
 #include "llvm/CodeGen/SelectionDAG.h"
 #include "llvm/CodeGen/TargetLowering.h"
 
 namespace llvm {
-class {{ namespace }}Subtarget;
-namespace {{ namespace }}ISD {
+class {{ Xpu }}Subtarget;
+namespace {{ Xpu }}ISD {
 enum NodeType : unsigned {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
   RET_GLUE,
@@ -21,10 +21,10 @@ enum NodeType : unsigned {
 };
 }
 
-class {{ namespace }}TargetLowering : public TargetLowering {
-  const {{ namespace }}Subtarget &Subtarget;
+class {{ Xpu }}TargetLowering : public TargetLowering {
+  const {{ Xpu }}Subtarget &Subtarget;
 public:
-  explicit {{ namespace }}TargetLowering(const TargetMachine &TM, const {{ namespace }}Subtarget &STI);
+  explicit {{ Xpu }}TargetLowering(const TargetMachine &TM, const {{ Xpu }}Subtarget &STI);
 
   // Lower incoming arguments, copy physregs into vregs
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,

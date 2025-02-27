@@ -1,21 +1,21 @@
-//===- {{ namespace }}FixupKinds.h - {{ namespace }} Specific Fixup Entries -===//
+//===- {{ Xpu }}FixupKinds.h - {{ Xpu }} Specific Fixup Entries -===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}FIXUPKINDS_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}FIXUPKINDS_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}FIXUPKINDS_H
+#define LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}FIXUPKINDS_H
 
 #include "llvm/MC/MCFixup.h"
 
 namespace llvm {
-namespace {{ namespace }} {
+namespace {{ Xpu }} {
 enum Fixups {
   {% for fx in fixups -%}
   {{ fx.name_enum }}{% if loop.first %} = FirstTargetFixupKind{% endif %},
   {% endfor -%}
   // Marker
-  fixup_{{ namespace.lower() }}_invalid,
-  NumTargetFixupKinds = fixup_{{ namespace.lower() }}_invalid - FirstTargetFixupKind
+  fixup_{{ xpu }}_invalid,
+  NumTargetFixupKinds = fixup_{{ xpu }}_invalid - FirstTargetFixupKind
 };
-} // end namespace {{ namespace }}
+} // end namespace {{ Xpu }}
 } // end namespace llvm
 
-#endif // LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}FIXUPKINDS_H
+#endif // LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}FIXUPKINDS_H

@@ -32,21 +32,21 @@ def {{ opcls.varname }}: BrImmS<{{ opcls.br_attr.width }},{{ opcls.br_attr.offse
 {% endfor %}
 
 //=== Instruction Classes
-class {{ namespace }}Inst<dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction {
-  let Namespace = "{{ namespace }}";
+class {{ Xpu }}Inst<dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction {
+  let Namespace = "{{ Xpu }}";
   field bits<32> Inst;
   let Size = 4;
   let OutOperandList = outs;
   let InOperandList  = ins;
   let AsmString   = asmstr;
   let Pattern     = pattern;
-  let DecoderNamespace = "{{ namespace }}";
+  let DecoderNamespace = "{{ Xpu }}";
   field bits<32> SoftFail = 0;
 }
 
 //=== Instruction Defs
 {% for inst in instr_defs -%}
-def {{ inst.varname }}: {{ namespace }}Inst<
+def {{ inst.varname }}: {{ Xpu }}Inst<
   (outs {{ inst.outs }}), (ins {{ inst.ins }}),
   {{ inst.asmstr }},
   {{ inst.pattern }}>
@@ -59,14 +59,14 @@ def {{ inst.varname }}: {{ namespace }}Inst<
 {% endfor %}
 
 //=== Pseudo Instruction Defs
-def {{ namespace.lower() }}_ret_glue : SDNode<
-  "{{ namespace }}ISD::RET_GLUE", SDTNone,
+def {{ xpu }}_ret_glue : SDNode<
+  "{{ Xpu }}ISD::RET_GLUE", SDTNone,
   [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 
-def PseudoRET: {{ namespace }}Inst<
+def PseudoRET: {{ Xpu }}Inst<
   (outs), (ins),
   "",
-  [({{ namespace.lower() }}_ret_glue)]>
+  [({{ xpu }}_ret_glue)]>
 {
   let isPseudo = 1;
   let isCodeGenOnly = 1;
@@ -135,10 +135,10 @@ def : Pat<(FIAddr (iPTR GPR:$rs1), Imm:$imm),
 
 def AddrReg      : ComplexPattern<iPTR, 2, "SelectAddrRegImm", [], []>;
 
-class LoadPattern<PatFrag LoadOp, {{ namespace }}Inst Inst> :
+class LoadPattern<PatFrag LoadOp, {{ Xpu }}Inst Inst> :
   Pat<(LoadOp (AddrReg GPR:$rs1, Imm:$imm)),
       (Inst (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
-class StorePattern<PatFrag StoreOp, {{ namespace }}Inst Inst, RegisterClass RC> :
+class StorePattern<PatFrag StoreOp, {{ Xpu }}Inst Inst, RegisterClass RC> :
   Pat<(StoreOp RC:$rs2, (AddrReg GPR:$rs1, Imm:$imm)),
       (Inst RC:$rs2, (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
 

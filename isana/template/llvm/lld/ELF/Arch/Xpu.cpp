@@ -1,4 +1,4 @@
-//===- {{ namespace }}.cpp -===//
+//===- {{ Xpu }}.cpp -===//
 
 #include "Symbols.h"
 #include "Target.h"
@@ -14,9 +14,9 @@ using namespace lld;
 using namespace lld::elf;
 
 namespace {
-class {{ namespace }} final : public TargetInfo {
+class {{ Xpu }} final : public TargetInfo {
 public:
-  {{ namespace }}();
+  {{ Xpu }}();
   RelExpr getRelExpr(RelType type, const Symbol &s,
                      const uint8_t *loc) const override;
   void relocate(uint8_t *loc, const Relocation &rel,
@@ -24,10 +24,10 @@ public:
 };
 } // namespace
 
-{{ namespace }}::{{ namespace }}() {
+{{ Xpu }}::{{ Xpu }}() {
 }
 
-RelExpr {{ namespace }}::getRelExpr(RelType type, const Symbol &s,
+RelExpr {{ Xpu }}::getRelExpr(RelType type, const Symbol &s,
                            const uint8_t *loc) const {
   switch (type) {
   // case R_CUSTOMXPU_PC_REL_0:
@@ -37,10 +37,10 @@ RelExpr {{ namespace }}::getRelExpr(RelType type, const Symbol &s,
   }
 }
 
-void {{ namespace }}::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const {
+void {{ Xpu }}::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const {
   switch (rel.type) {
   {% for fx in fixup_relocs -%}
-  case R_{{ namespace.upper() }}_{{ fx.name.upper() }}: {
+  case R_{{ XPU }}_{{ fx.name.upper() }}: {
     uint32_t newval = read{{ fx.size }}le(loc)
     {% for proc in fx.reloc_procs -%}
     {{ proc }}
@@ -55,7 +55,7 @@ void {{ namespace }}::relocate(uint8_t *loc, const Relocation &rel, uint64_t val
   }
 }
 
-TargetInfo *elf::get{{ namespace }}TargetInfo() {
-  static {{ namespace }} target;
+TargetInfo *elf::get{{ Xpu }}TargetInfo() {
+  static {{ Xpu }} target;
   return &target;
 }

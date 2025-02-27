@@ -1,12 +1,12 @@
-//===- {{ namespace }}MCTargetDesc.cpp - {{ namespace }} Target Descriptions -===//
+//===- {{ Xpu }}MCTargetDesc.cpp - {{ Xpu }} Target Descriptions -===//
 
-#include "{{ namespace }}MCTargetDesc.h"
-#include "{{ namespace }}AsmBackend.h"
-// #include "{{ namespace }}BaseInfo.h"
-// #include "{{ namespace }}ELFStreamer.h"
-#include "{{ namespace }}InstPrinter.h"
-#include "{{ namespace }}MCAsmInfo.h"
-#include "TargetInfo/{{ namespace }}TargetInfo.h"
+#include "{{ Xpu }}MCTargetDesc.h"
+#include "{{ Xpu }}AsmBackend.h"
+// #include "{{ Xpu }}BaseInfo.h"
+// #include "{{ Xpu }}ELFStreamer.h"
+#include "{{ Xpu }}InstPrinter.h"
+#include "{{ Xpu }}MCAsmInfo.h"
+#include "TargetInfo/{{ Xpu }}TargetInfo.h"
 
 #include "llvm/MC/MachineLocation.h"
 #include "llvm/MC/MCAsmBackend.h"
@@ -28,86 +28,86 @@ using namespace llvm;
 
 #define GET_INSTRINFO_MC_DESC
 #define ENABLE_INSTR_PREDICATE_VERIFIER
-#include "{{ namespace }}GenInstrInfo.inc"
+#include "{{ Xpu }}GenInstrInfo.inc"
 
 #define GET_SUBTARGETINFO_MC_DESC
-#include "{{ namespace }}GenSubtargetInfo.inc"
+#include "{{ Xpu }}GenSubtargetInfo.inc"
 
 #define GET_REGINFO_MC_DESC
-#include "{{ namespace }}GenRegisterInfo.inc"
+#include "{{ Xpu }}GenRegisterInfo.inc"
 
-static MCInstrInfo *create{{ namespace }}MCInstrInfo() {
+static MCInstrInfo *create{{ Xpu }}MCInstrInfo() {
   MCInstrInfo *X = new MCInstrInfo();
-  Init{{ namespace }}MCInstrInfo(X); // defined in {{ namespace }}GenInstrInfo.inc
+  Init{{ Xpu }}MCInstrInfo(X); // defined in {{ Xpu }}GenInstrInfo.inc
   return X;
 }
 
-static MCRegisterInfo *create{{ namespace }}MCRegisterInfo(const Triple &TT) {
+static MCRegisterInfo *create{{ Xpu }}MCRegisterInfo(const Triple &TT) {
   MCRegisterInfo *X = new MCRegisterInfo();
-  Init{{ namespace }}MCRegisterInfo(X, {{ namespace }}::X1); // defined in {{ namespace }}GenRegisterInfo.inc
+  Init{{ Xpu }}MCRegisterInfo(X, {{ Xpu }}::X1); // defined in {{ Xpu }}GenRegisterInfo.inc
   return X;
 }
 
-static MCSubtargetInfo *create{{ namespace }}MCSubtargetInfo(const Triple &TT,
+static MCSubtargetInfo *create{{ Xpu }}MCSubtargetInfo(const Triple &TT,
                                                       StringRef CPU, StringRef FS) {
   if (CPU.empty() || CPU == "generic") {
-    if (TT.getArch() == llvm::Triple::{{ namespace.lower() }}64be)
+    if (TT.getArch() == llvm::Triple::{{ xpu }}64be)
       CPU = "xpu-64be";
-    else if (TT.getArch() == llvm::Triple::{{ namespace.lower() }}64le)
+    else if (TT.getArch() == llvm::Triple::{{ xpu }}64le)
       CPU = "xpu-64le";
-    else if (TT.getArch() == llvm::Triple::{{ namespace.lower() }}32be)
+    else if (TT.getArch() == llvm::Triple::{{ xpu }}32be)
       CPU = "xpu-32be";
-    else if (TT.getArch() == llvm::Triple::{{ namespace.lower() }}32le)
+    else if (TT.getArch() == llvm::Triple::{{ xpu }}32le)
       CPU = "xpu-32le";
   }
-  return create{{ namespace }}MCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/CPU ,FS);
+  return create{{ Xpu }}MCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/CPU ,FS);
 }
 
-static MCAsmInfo *create{{ namespace }}MCAsmInfo(const MCRegisterInfo &MRI,
+static MCAsmInfo *create{{ Xpu }}MCAsmInfo(const MCRegisterInfo &MRI,
                                            const Triple &TT,
                                            const MCTargetOptions &Options) {
-  MCAsmInfo *MAI = new {{ namespace }}MCAsmInfo(TT);
-  unsigned SP = MRI.getDwarfRegNum({{ namespace }}::X2, true);
+  MCAsmInfo *MAI = new {{ Xpu }}MCAsmInfo(TT);
+  unsigned SP = MRI.getDwarfRegNum({{ Xpu }}::X2, true);
   MCCFIInstruction Inst = MCCFIInstruction::cfiDefCfa(nullptr, SP, 0);
   MAI->addInitialFrameState(Inst);
   return MAI;
 }
 
-static MCInstPrinter *create{{ namespace }}MCInstPrinter(const Triple &T,
+static MCInstPrinter *create{{ Xpu }}MCInstPrinter(const Triple &T,
                                                    unsigned SyntaxVariant,
                                                    const MCAsmInfo &MAI,
                                                    const MCInstrInfo &MII,
                                                    const MCRegisterInfo &MRI) {
- return new {{ namespace }}InstPrinter(MAI, MII, MRI);
+ return new {{ Xpu }}InstPrinter(MAI, MII, MRI);
 }
 
 namespace {
 
-class {{ namespace }}MCInstrAnalysis : public MCInstrAnalysis {
+class {{ Xpu }}MCInstrAnalysis : public MCInstrAnalysis {
  public:
-  {{ namespace }}MCInstrAnalysis(const MCInstrInfo *Info) : MCInstrAnalysis(Info) {}
+  {{ Xpu }}MCInstrAnalysis(const MCInstrInfo *Info) : MCInstrAnalysis(Info) {}
 };
 }
 
-static MCInstrAnalysis *create{{ namespace }}MCInstrAnalysis(const MCInstrInfo *Info) {
-  return new {{ namespace }}MCInstrAnalysis(Info);
+static MCInstrAnalysis *create{{ Xpu }}MCInstrAnalysis(const MCInstrInfo *Info) {
+  return new {{ Xpu }}MCInstrAnalysis(Info);
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}TargetMC() {
-  for (Target *T : {&getThe{{ namespace }}32leTarget(), &getThe{{ namespace }}32beTarget(),
-                    &getThe{{ namespace }}64leTarget(), &getThe{{ namespace }}64beTarget()}) {
-    TargetRegistry::RegisterMCRegInfo(*T, create{{ namespace }}MCRegisterInfo);
-    TargetRegistry::RegisterMCInstrInfo(*T, create{{ namespace }}MCInstrInfo);
-    TargetRegistry::RegisterMCSubtargetInfo(*T, create{{ namespace }}MCSubtargetInfo);
-    TargetRegistry::RegisterMCAsmInfo(*T, create{{ namespace }}MCAsmInfo);
-    // TargetRegistry::RegisterMCInstrAnalysis(*T, create{{ namespace }}MCInstrAnalysis);
-    TargetRegistry::RegisterMCInstPrinter(*T, create{{ namespace }}MCInstPrinter);
-    TargetRegistry::RegisterMCCodeEmitter(*T, create{{ namespace }}MCCodeEmitter);
-    TargetRegistry::RegisterMCAsmBackend(*T, create{{ namespace }}AsmBackend);
-    // TargetRegistry::RegisterELFStreamer(*T, create{{ namespace }}ELFStreamer);
-    // TargetRegistry::RegisterObjectTargetStreamer(*T, create{{ namespace }}ObjectTargetStreamer);
-    // TargetRegistry::RegisterAsmTargetStreamer(*T, create{{ namespace }}AsmTargetStreamer);
-    // TargetRegistry::RegisterNullTargetStreamer(*T, create{{ namespace }}NullTargetStreamer);
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ Xpu }}TargetMC() {
+  for (Target *T : {&getThe{{ Xpu }}32leTarget(), &getThe{{ Xpu }}32beTarget(),
+                    &getThe{{ Xpu }}64leTarget(), &getThe{{ Xpu }}64beTarget()}) {
+    TargetRegistry::RegisterMCRegInfo(*T, create{{ Xpu }}MCRegisterInfo);
+    TargetRegistry::RegisterMCInstrInfo(*T, create{{ Xpu }}MCInstrInfo);
+    TargetRegistry::RegisterMCSubtargetInfo(*T, create{{ Xpu }}MCSubtargetInfo);
+    TargetRegistry::RegisterMCAsmInfo(*T, create{{ Xpu }}MCAsmInfo);
+    // TargetRegistry::RegisterMCInstrAnalysis(*T, create{{ Xpu }}MCInstrAnalysis);
+    TargetRegistry::RegisterMCInstPrinter(*T, create{{ Xpu }}MCInstPrinter);
+    TargetRegistry::RegisterMCCodeEmitter(*T, create{{ Xpu }}MCCodeEmitter);
+    TargetRegistry::RegisterMCAsmBackend(*T, create{{ Xpu }}AsmBackend);
+    // TargetRegistry::RegisterELFStreamer(*T, create{{ Xpu }}ELFStreamer);
+    // TargetRegistry::RegisterObjectTargetStreamer(*T, create{{ Xpu }}ObjectTargetStreamer);
+    // TargetRegistry::RegisterAsmTargetStreamer(*T, create{{ Xpu }}AsmTargetStreamer);
+    // TargetRegistry::RegisterNullTargetStreamer(*T, create{{ Xpu }}NullTargetStreamer);
   }
 }
 

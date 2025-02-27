@@ -1,11 +1,11 @@
-add_llvm_component_library(LLVM{{ namespace }}Disassembler
-  {{ namespace }}Disassembler.cpp
+add_llvm_component_library(LLVM{{ Xpu }}Disassembler
+  {{ Xpu }}Disassembler.cpp
 
   LINK_COMPONENTS
-  {{ namespace }}Info
+  {{ Xpu }}Info
   MCDisassembler
   Support
 
   ADD_TO_COMPONENT
-  {{ namespace }}
+  {{ Xpu }}
   )

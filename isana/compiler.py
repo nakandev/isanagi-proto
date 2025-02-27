@@ -264,6 +264,11 @@ class LLVMCompiler():
         template_fpath = os.path.join(template_fdir, template_fname)
         with open(template_fpath) as f:
             template_str = f.read()
+        tmp_kwargs.update({
+            'Xpu': self.namespace,
+            'XPU': self.namespace.upper(),
+            'xpu': self.namespace.lower(),
+        })
         final_text = Template(source=template_str).render(
             **tmp_kwargs,
         )
@@ -285,7 +290,6 @@ class LLVMCompiler():
         fdirs = "lld/ELF/Arch".split("/")
         fname = "Xpu", ".cpp"
         kwargs = {
-            "namespace": self.namespace,
             "fixup_relocs": fixup_relocs,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -296,7 +300,6 @@ class LLVMCompiler():
         fdirs = "llvm/include/llvm/BinaryFormat/ELFRelocs".split("/")
         fname = "Xpu", ".def"
         kwargs = {
-            "namespace": self.namespace,
             "fixups": fixups,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -306,7 +309,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", ".h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -314,7 +316,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", ".td"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -322,7 +323,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "AsmPrinter.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -342,7 +342,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "CallingConv.td"
         kwargs = {
-            "namespace": self.namespace,
             "callee_saved_regs": callee_saved_regs,
             "arg_regs": arg_regs,
             "ret_regs": ret_regs,
@@ -398,7 +397,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "RegisterInfo.td"
         kwargs = {
-            "namespace": self.namespace,
             "reg_bases": reg_bases,
             "reg_defs": reg_defs,
             "regcls_defs": regcls_defs,
@@ -426,7 +424,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "RegisterInfo.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "reserved_regs": reserved_regs,
             "reg0": reg0,
             "sp": sp,
@@ -438,7 +435,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "RegisterInfo.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -651,7 +647,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "InstrInfo.td"
         kwargs = {
-            "namespace": self.namespace,
             "asm_operand_clss": asm_operand_clss,
             "operand_clss": operand_clss,
             "operand_types": operand_types,
@@ -661,27 +656,20 @@ class LLVMCompiler():
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instrinfo_cpp(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "InstrInfo.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_instrinfo_h(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "InstrInfo.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_framelowering_cpp(self):
-        pass
         gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
         sp = None
         if gpr:
@@ -692,60 +680,42 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "FrameLowering.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "sp": sp,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_framelowering_h(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "FrameLowering.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_isellowering_cpp(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "ISelLowering.cpp"
         kwargs = {
-            "namespace": self.namespace,
-            # "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_isellowering_h(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "ISelLowering.h"
         kwargs = {
-            "namespace": self.namespace,
-            # "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_iseldagtodag_cpp(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "ISelDAGToDAG.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_iseldagtodag_h(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "ISelDAGToDAG.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -753,27 +723,20 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "Schedule.td"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_subtarget_cpp(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "Subtarget.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
     def gen_subtarget_h(self):
-        pass
-
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "Subtarget.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -781,7 +744,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "TargetMachine.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -789,7 +751,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}".split("/")
         fname = "Xpu", "TargetMachine.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -797,7 +758,6 @@ class LLVMCompiler():
         # fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "", "CMakeLists.txt"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -815,7 +775,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/AsmParser".split("/")
         fname = "Xpu", "AsmParser.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -854,7 +813,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/Disassembler".split("/")
         fname = "Xpu", "Disassembler.cpp"
         kwargs = {
-            "namespace": self.namespace,
             # "gpr_regs": gpr_regs,
             "instr_bitsizes": instr_bitsizes,
             "regcls_defs": regcls_defs,
@@ -870,7 +828,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "AsmBackend.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -883,7 +840,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "AsmBackend.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "fixups": fixups,
             "fixups_should_force_reloc": fixups_should_force_reloc,
             "fixups_adjust": fixups_adjust,
@@ -895,7 +851,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "BaseInfo.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -907,7 +862,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "ELFObjectWriter.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "fixups_pc_rel": fixups_pc_rel,
             "fixup_relocs": fixup_relocs,
         }
@@ -919,7 +873,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "FixupKinds.h"
         kwargs = {
-            "namespace": self.namespace,
             "fixups": fixups,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -937,7 +890,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "InstPrinter.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -955,7 +907,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "InstPrinter.h"
         kwargs = {
-            "namespace": self.namespace,
             "asm_operand_clss": asm_operand_clss,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -964,7 +915,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCAsmInfo.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -972,7 +922,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCAsmInfo.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -983,7 +932,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCCodeEmitter.cpp"
         kwargs = {
-            "namespace": self.namespace,
             "fixup_relocs": fixup_relocs,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
@@ -992,7 +940,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCExpr.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -1000,7 +947,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCExpr.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -1008,7 +954,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCTargetDesc.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -1016,7 +961,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/MCTargetDesc".split("/")
         fname = "Xpu", "MCTargetDesc.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -1043,7 +987,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/TargetInfo".split("/")
         fname = "Xpu", "TargetInfo.cpp"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 
@@ -1051,7 +994,6 @@ class LLVMCompiler():
         fdirs = f"llvm/lib/Target/{_default_namespace}/TargetInfo".split("/")
         fname = "Xpu", "TargetInfo.h"
         kwargs = {
-            "namespace": self.namespace,
         }
         self._read_template_and_write(fdirs, fname, kwargs)
 

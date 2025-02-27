@@ -1,23 +1,23 @@
-//===-- {{ namespace }}Subtarget.cpp - {{ namespace }} Subtarget Information Impl -*- C++ -*-===//
+//===-- {{ Xpu }}Subtarget.cpp - {{ Xpu }} Subtarget Information Impl -*- C++ -*-===//
 
-#include "{{ namespace }}Subtarget.h"
-#include "{{ namespace }}.h"
-#include "{{ namespace }}TargetMachine.h"
+#include "{{ Xpu }}Subtarget.h"
+#include "{{ Xpu }}.h"
+#include "{{ Xpu }}TargetMachine.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/TargetParser/Host.h"
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-subtarget"
+#define DEBUG_TYPE "{{ xpu }}-subtarget"
 
 #define GET_SUBTARGETINFO_TARGET_DESC
 #define GET_SUBTARGETINFO_CTOR
-#include "{{ namespace }}GenSubtargetInfo.inc"
+#include "{{ Xpu }}GenSubtargetInfo.inc"
 
-void {{ namespace }}Subtarget::anchor() {}
+void {{ Xpu }}Subtarget::anchor() {}
 
-{{ namespace }}Subtarget &
-{{ namespace }}Subtarget::initializeSubtargetDependencies(
+{{ Xpu }}Subtarget &
+{{ Xpu }}Subtarget::initializeSubtargetDependencies(
   StringRef CPU,
   StringRef FS
 ) {
@@ -27,9 +27,9 @@ void {{ namespace }}Subtarget::anchor() {}
   return *this;
 }
 
-{{ namespace }}Subtarget::{{ namespace }}Subtarget(
+{{ Xpu }}Subtarget::{{ Xpu }}Subtarget(
   const Triple &TT, StringRef CPU, StringRef FS, const TargetMachine &TM)
-    : {{ namespace }}GenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS),
+    : {{ Xpu }}GenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS),
       FrameLowering(initializeSubtargetDependencies(CPU, FS)),
       InstrInfo(*this), RegInfo(), TLInfo(TM, *this) {
 }

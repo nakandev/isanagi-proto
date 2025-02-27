@@ -1,14 +1,14 @@
-add_llvm_component_library(LLVM{{ namespace }}AsmParser
-  {{ namespace }}AsmParser.cpp
+add_llvm_component_library(LLVM{{ Xpu }}AsmParser
+  {{ Xpu }}AsmParser.cpp
 
   LINK_COMPONENTS
-  {{ namespace }}Desc
-  {{ namespace }}Info
+  {{ Xpu }}Desc
+  {{ Xpu }}Info
   MC
   MCParser
   Support
   TargetParser
 
   ADD_TO_COMPONENT
-  {{ namespace }}
+  {{ Xpu }}
   )

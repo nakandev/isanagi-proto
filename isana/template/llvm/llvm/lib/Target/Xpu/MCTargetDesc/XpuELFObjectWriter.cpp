@@ -1,25 +1,25 @@
-//===- {{ namespace }}ELFObjectWriter.cpp - {{ namespace }} ELF Writer -===//
+//===- {{ Xpu }}ELFObjectWriter.cpp - {{ Xpu }} ELF Writer -===//
 
-#include "{{ namespace }}FixupKinds.h"
-#include "{{ namespace }}MCExpr.h"
-#include "{{ namespace }}MCTargetDesc.h"
+#include "{{ Xpu }}FixupKinds.h"
+#include "{{ Xpu }}MCExpr.h"
+#include "{{ Xpu }}MCTargetDesc.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCObjectWriter.h"
 // #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCValue.h"
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-elf-object-writer"
+#define DEBUG_TYPE "{{ xpu }}-elf-object-writer"
 
 using namespace llvm;
 
 namespace {
 
-class {{ namespace }}ELFObjectWriter : public MCELFObjectTargetWriter {
+class {{ Xpu }}ELFObjectWriter : public MCELFObjectTargetWriter {
 public:
-  {{ namespace }}ELFObjectWriter(uint8_t OSABI = 0)
-      : MCELFObjectTargetWriter(false, OSABI, ELF::EM_{{ namespace.upper() }}, true){};
-  ~{{ namespace }}ELFObjectWriter() {}
+  {{ Xpu }}ELFObjectWriter(uint8_t OSABI = 0)
+      : MCELFObjectTargetWriter(false, OSABI, ELF::EM_{{ XPU }}, true){};
+  ~{{ Xpu }}ELFObjectWriter() {}
 
   unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
                         const MCFixup &Fixup, bool IsPCRel) const override;
@@ -28,7 +28,7 @@ public:
 } // namespace
 
 unsigned
-{{ namespace }}ELFObjectWriter::getRelocType(
+{{ Xpu }}ELFObjectWriter::getRelocType(
   MCContext &Ctx,
   const MCValue &Target,
   const MCFixup &Fixup,
@@ -49,8 +49,8 @@ unsigned
     case FK_PCRel_4:
       return ELF::R_CKCORE_PCREL32;
     {% for fx in fixups_pc_rel -%}
-    case {{ namespace }}::{{ fx.name_enum }}:
-      return ELF::R_{{ namespace.upper() }}_{{ fx.name.upper() }};
+    case {{ Xpu }}::{{ fx.name_enum }}:
+      return ELF::R_{{ XPU }}_{{ fx.name.upper() }};
     {% endfor %}
     }
   }
@@ -68,12 +68,12 @@ unsigned
     return ELF::R_CKCORE_NONE;
   case FK_Data_4:
     if (Expr->getKind() == MCExpr::Target) {
-      auto TK = cast<{{ namespace }}MCExpr>(Expr)->getKind();
-      // if (TK == {{ namespace }}MCExpr::VK_{{ namespace }}_ADDR)
+      auto TK = cast<{{ Xpu }}MCExpr>(Expr)->getKind();
+      // if (TK == {{ Xpu }}MCExpr::VK_{{ Xpu }}_ADDR)
       //   return ELF::R_CKCORE_ADDR32;
-      if (TK == {{ namespace }}MCExpr::VK_{{ namespace }}_None)
+      if (TK == {{ Xpu }}MCExpr::VK_{{ Xpu }}_None)
         return ELF::R_CKCORE_ADDR32;
-      return ELF::R_{{ namespace.upper() }}_32;
+      return ELF::R_{{ XPU }}_32;
     }
     // else {
     //   switch (Modifier) {
@@ -86,19 +86,19 @@ unsigned
     //   }
     // }
     // return ELF::R_CKCORE_NONE;
-    return ELF::R_{{ namespace.upper() }}_32;
+    return ELF::R_{{ XPU }}_32;
   case FK_Data_8:
-    return ELF::R_{{ namespace.upper() }}_64;
+    return ELF::R_{{ XPU }}_64;
   {% for fx in fixup_relocs -%}
-  case {{ namespace }}::{{ fx.name_enum }}:
-    return ELF::R_{{ namespace.upper() }}_{{ fx.name.upper() }};
+  case {{ Xpu }}::{{ fx.name_enum }}:
+    return ELF::R_{{ XPU }}_{{ fx.name.upper() }};
   {% endfor %}
   }
 }
 
 std::unique_ptr<MCObjectTargetWriter>
-llvm::create{{ namespace }}ELFObjectWriter(
+llvm::create{{ Xpu }}ELFObjectWriter(
 )
 {
-  return std::make_unique<{{ namespace }}ELFObjectWriter>();
+  return std::make_unique<{{ Xpu }}ELFObjectWriter>();
 }

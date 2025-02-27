@@ -1,8 +1,8 @@
-//===- {{ namespace }}InstPrinter.cpp - Convert {{ namespace }} MCInst to asm syntax -===//
+//===- {{ Xpu }}InstPrinter.cpp - Convert {{ Xpu }} MCInst to asm syntax -===//
 
-#include "{{ namespace }}InstPrinter.h"
-// #include "{{ namespace }}BaseInfo.h"
-// #include "{{ namespace }}MCExpr.h"
+#include "{{ Xpu }}InstPrinter.h"
+// #include "{{ Xpu }}BaseInfo.h"
+// #include "{{ Xpu }}MCExpr.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
@@ -19,10 +19,10 @@ using namespace llvm;
 
 // Include the auto-generated portion of the assembly writer.
 #define PRINT_ALIAS_INSTR
-#include "{{ namespace }}GenAsmWriter.inc"
+#include "{{ Xpu }}GenAsmWriter.inc"
 
 bool
-{{ namespace }}InstPrinter::applyTargetSpecificCLOption(
+{{ Xpu }}InstPrinter::applyTargetSpecificCLOption(
   StringRef Opt
 )
 {
@@ -38,7 +38,7 @@ bool
 }
 
 void
-{{ namespace }}InstPrinter::printInst(
+{{ Xpu }}InstPrinter::printInst(
   const MCInst *MI, uint64_t Address,
   StringRef Annot, const MCSubtargetInfo &STI,
   raw_ostream &O
@@ -50,7 +50,7 @@ void
 }
 
 void
-{{ namespace }}InstPrinter::printRegName(
+{{ Xpu }}InstPrinter::printRegName(
   raw_ostream &O, MCRegister Reg
 ) const
 {
@@ -58,7 +58,7 @@ void
 }
 
 void
-{{ namespace }}InstPrinter::printOperand(
+{{ Xpu }}InstPrinter::printOperand(
   const MCInst *MI, unsigned OpNo,
   raw_ostream &O,
   const char *Modifier
@@ -83,7 +83,7 @@ void
 
 {% for asmopcls in asm_operand_clss -%}
 void
-{{ namespace }}InstPrinter::print{{ asmopcls.name }}(
+{{ Xpu }}InstPrinter::print{{ asmopcls.name }}(
   const MCInst *MI,
   unsigned OpNo,
   raw_ostream &O

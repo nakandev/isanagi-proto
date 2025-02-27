@@ -1,4 +1,4 @@
-//===-- {{ namespace }}.td - Describe the {{ namespace }} Target Machine *- tablegen -*-===//
+//===-- {{ Xpu }}.td - Describe the {{ Xpu }} Target Machine *- tablegen -*-===//
 
 include "llvm/Target/Target.td"
 
@@ -11,14 +11,14 @@ def ProcXPU32be : ProcessorModel<"xpu-32be", NoSchedModel, [FeatureBE]>;
 def ProcXPU64le : ProcessorModel<"xpu-64le", NoSchedModel, [Feature64Bit]>;
 def ProcXPU64be : ProcessorModel<"xpu-64be", NoSchedModel, [Feature64Bit, FeatureBE]>;
 
-include "{{ namespace }}RegisterInfo.td"
-include "{{ namespace }}CallingConv.td"
-include "{{ namespace }}Schedule.td"
-include "{{ namespace }}InstrInfo.td"
+include "{{ Xpu }}RegisterInfo.td"
+include "{{ Xpu }}CallingConv.td"
+include "{{ Xpu }}Schedule.td"
+include "{{ Xpu }}InstrInfo.td"
 
-def {{ namespace }}InstrInfo : InstrInfo {
+def {{ Xpu }}InstrInfo : InstrInfo {
 }
 
-def {{ namespace }} : Target {
-  let InstructionSet = {{ namespace }}InstrInfo;
+def {{ Xpu }} : Target {
+  let InstructionSet = {{ Xpu }}InstrInfo;
 }

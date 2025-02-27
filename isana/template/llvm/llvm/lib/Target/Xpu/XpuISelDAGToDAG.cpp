@@ -1,10 +1,10 @@
-//===-- {{ namespace }}ISelDAGToDAG.cpp - A Dag to Dag Inst Selector for {{ namespace }} -*- C++ -*-===//
+//===-- {{ Xpu }}ISelDAGToDAG.cpp - A Dag to Dag Inst Selector for {{ Xpu }} -*- C++ -*-===//
 
-#include "{{ namespace }}ISelDAGToDAG.h"
-// #include "MCTargetDesc/{{ namespace }}BaseInfo.h"
-#include "{{ namespace }}.h"
-// #include "{{ namespace }}MachineFunction.h"
-#include "{{ namespace }}RegisterInfo.h"
+#include "{{ Xpu }}ISelDAGToDAG.h"
+// #include "MCTargetDesc/{{ Xpu }}BaseInfo.h"
+#include "{{ Xpu }}.h"
+// #include "{{ Xpu }}MachineFunction.h"
+#include "{{ Xpu }}RegisterInfo.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -25,20 +25,20 @@
 #include "llvm/Target/TargetMachine.h"
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-isel"
-#define PASS_NAME "{{ namespace }} DAG->DAG Pattern Instruction Selection"
+#define DEBUG_TYPE "{{ xpu }}-isel"
+#define PASS_NAME "{{ Xpu }} DAG->DAG Pattern Instruction Selection"
 
 //===----------------------------------------------------------------------===//
 // Instruction Selector Implementation
 //===----------------------------------------------------------------------===//
 
 //===----------------------------------------------------------------------===//
-// {{ namespace }}DAGToDAGISel - {{ namespace }} specific code to select {{ namespace }} machine
+// {{ Xpu }}DAGToDAGISel - {{ Xpu }} specific code to select {{ Xpu }} machine
 // instructions for SelectionDAG operations.
 //===----------------------------------------------------------------------===//
 
-bool {{ namespace }}DAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
-  Subtarget = &MF.getSubtarget<{{ namespace }}Subtarget>();
+bool {{ Xpu }}DAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
+  Subtarget = &MF.getSubtarget<{{ Xpu }}Subtarget>();
   bool Ret = SelectionDAGISel::runOnMachineFunction(MF);
 
   // processFunctionAfterISel(MF);
@@ -46,7 +46,7 @@ bool {{ namespace }}DAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   return Ret;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndex(
+bool {{ Xpu }}DAGToDAGISel::SelectAddrFrameIndex(
   SDValue Addr,
   SDValue &Base
 ) {
@@ -61,7 +61,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndex(
   return false;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndexRegImm(
+bool {{ Xpu }}DAGToDAGISel::SelectAddrFrameIndexRegImm(
   SDValue Addr,
   SDValue &Base,
   SDValue &Offset
@@ -88,7 +88,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrFrameIndexRegImm(
   return false;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrGlobal(
+bool {{ Xpu }}DAGToDAGISel::SelectAddrGlobal(
   SDValue Addr,
   SDValue &Base
 ) {
@@ -104,7 +104,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrGlobal(
   return false;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrGlobalRegImm(
+bool {{ Xpu }}DAGToDAGISel::SelectAddrGlobalRegImm(
   SDValue Addr,
   SDValue &Base,
   SDValue &Offset
@@ -133,7 +133,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrGlobalRegImm(
   return false;
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectAddrRegImm(
+bool {{ Xpu }}DAGToDAGISel::SelectAddrRegImm(
   SDValue Addr,
   SDValue &Base,
   SDValue &Offset
@@ -171,7 +171,7 @@ bool {{ namespace }}DAGToDAGISel::SelectAddrRegImm(
 
 /// Select instructions not customized! Used for
 /// expanded, promoted and normal instructions
-void {{ namespace }}DAGToDAGISel::Select(SDNode *Node) {
+void {{ Xpu }}DAGToDAGISel::Select(SDNode *Node) {
   // unsigned Opcode = Node->getOpcode();
 
   // If we have a custom node, we already have selected!
@@ -189,7 +189,7 @@ void {{ namespace }}DAGToDAGISel::Select(SDNode *Node) {
   SelectCode(Node);
 }
 
-bool {{ namespace }}DAGToDAGISel::SelectInlineAsmMemoryOperand(
+bool {{ Xpu }}DAGToDAGISel::SelectInlineAsmMemoryOperand(
     const SDValue &Op, InlineAsm::ConstraintCode ConstraintID,
     std::vector<SDValue> &OutOps) {
   // All memory constraints can at least accept raw pointers.
@@ -205,16 +205,16 @@ bool {{ namespace }}DAGToDAGISel::SelectInlineAsmMemoryOperand(
   return true;
 }
 
-char {{ namespace }}DAGToDAGISelLegacy::ID = 0;
+char {{ Xpu }}DAGToDAGISelLegacy::ID = 0;
 
-{{ namespace }}DAGToDAGISelLegacy::{{ namespace }}DAGToDAGISelLegacy(
-    {{ namespace }}TargetMachine &TM, CodeGenOptLevel OptLevel)
+{{ Xpu }}DAGToDAGISelLegacy::{{ Xpu }}DAGToDAGISelLegacy(
+    {{ Xpu }}TargetMachine &TM, CodeGenOptLevel OptLevel)
       : SelectionDAGISelLegacy(
-            ID, std::make_unique<{{ namespace }}DAGToDAGISel>(TM, OptLevel)) {}
+            ID, std::make_unique<{{ Xpu }}DAGToDAGISel>(TM, OptLevel)) {}
 
-INITIALIZE_PASS({{ namespace }}DAGToDAGISelLegacy, DEBUG_TYPE, PASS_NAME, false, false)
+INITIALIZE_PASS({{ Xpu }}DAGToDAGISelLegacy, DEBUG_TYPE, PASS_NAME, false, false)
 
-FunctionPass *llvm::create{{ namespace }}ISelDag({{ namespace }}TargetMachine &TM,
+FunctionPass *llvm::create{{ Xpu }}ISelDag({{ Xpu }}TargetMachine &TM,
                                            CodeGenOptLevel OptLevel) {
-  return new {{ namespace }}DAGToDAGISelLegacy(TM, OptLevel);
+  return new {{ Xpu }}DAGToDAGISelLegacy(TM, OptLevel);
 }

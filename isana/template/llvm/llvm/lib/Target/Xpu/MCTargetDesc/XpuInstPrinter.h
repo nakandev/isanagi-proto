@@ -1,16 +1,16 @@
-//===- {{ namespace }}InstPrinter.h - Convert {{ namespace }} MCInst to asm syntax -===//
+//===- {{ Xpu }}InstPrinter.h - Convert {{ Xpu }} MCInst to asm syntax -===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}INSTPRINTER_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}INSTPRINTER_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}INSTPRINTER_H
+#define LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}INSTPRINTER_H
 
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
 #include "llvm/MC/MCInstPrinter.h"
 
 namespace llvm {
 
-class {{ namespace }}InstPrinter : public MCInstPrinter {
+class {{ Xpu }}InstPrinter : public MCInstPrinter {
 public:
-  {{ namespace }}InstPrinter(const MCAsmInfo &MAI, const MCInstrInfo &MII,
+  {{ Xpu }}InstPrinter(const MCAsmInfo &MAI, const MCInstrInfo &MII,
                    const MCRegisterInfo &MRI)
       : MCInstPrinter(MAI, MII, MRI) {}
 

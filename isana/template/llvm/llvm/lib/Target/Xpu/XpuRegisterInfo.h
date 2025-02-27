@@ -1,18 +1,18 @@
-//===-- {{ namespace }}RegisterInfo.h - {{ namespace }} Register Information Impl -*- C++ -*-===//
+//===-- {{ Xpu }}RegisterInfo.h - {{ Xpu }} Register Information Impl -*- C++ -*-===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}REGISTERINFO_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}REGISTERINFO_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}REGISTERINFO_H
+#define LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}REGISTERINFO_H
 
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 
 #define GET_REGINFO_HEADER
-#include "{{ namespace }}GenRegisterInfo.inc"
+#include "{{ Xpu }}GenRegisterInfo.inc"
 
 namespace llvm {
 
-struct {{ namespace }}RegisterInfo : public {{ namespace }}GenRegisterInfo {
+struct {{ Xpu }}RegisterInfo : public {{ Xpu }}GenRegisterInfo {
 
-  {{ namespace }}RegisterInfo();
+  {{ Xpu }}RegisterInfo();
 
   const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
 

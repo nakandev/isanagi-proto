@@ -1,31 +1,31 @@
-//===- {{ namespace }}MCExpr.h - {{ namespace }} specific MC expression classes -===//
+//===- {{ Xpu }}MCExpr.h - {{ Xpu }} specific MC expression classes -===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}MCEXPR_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_MCTARGETDESC_{{ namespace.upper() }}MCEXPR_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}MCEXPR_H
+#define LLVM_LIB_TARGET_{{ XPU }}_MCTARGETDESC_{{ XPU }}MCEXPR_H
 
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCValue.h"
 
 namespace llvm {
 
-class {{ namespace }}MCExpr : public MCTargetExpr {
+class {{ Xpu }}MCExpr : public MCTargetExpr {
 public:
   enum VariantKind {
-    VK_{{ namespace }}_None,
-    VK_{{ namespace }}_CALL,
-    VK_{{ namespace }}_SYMBOL,
-    VK_{{ namespace }}_Invalid
+    VK_{{ Xpu }}_None,
+    VK_{{ Xpu }}_CALL,
+    VK_{{ Xpu }}_SYMBOL,
+    VK_{{ Xpu }}_Invalid
   };
 
 private:
   const VariantKind Kind;
   const MCExpr *Expr;
 
-  explicit {{ namespace }}MCExpr(VariantKind Kind, const MCExpr *Expr)
+  explicit {{ Xpu }}MCExpr(VariantKind Kind, const MCExpr *Expr)
       : Kind(Kind), Expr(Expr) {}
 
 public:
-  static const {{ namespace }}MCExpr *create(const MCExpr *Expr, VariantKind Kind,
+  static const {{ Xpu }}MCExpr *create(const MCExpr *Expr, VariantKind Kind,
                                   MCContext &Ctx);
 
   // Returns the kind of this expression.

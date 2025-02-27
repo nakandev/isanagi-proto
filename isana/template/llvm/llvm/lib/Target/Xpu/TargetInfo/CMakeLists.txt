@@ -1,10 +1,10 @@
-add_llvm_component_library(LLVM{{ namespace }}Info
-  {{ namespace }}TargetInfo.cpp
+add_llvm_component_library(LLVM{{ Xpu }}Info
+  {{ Xpu }}TargetInfo.cpp
 
   LINK_COMPONENTS
   MC
   Support
 
   ADD_TO_COMPONENT
-  {{ namespace }}
+  {{ Xpu }}
 )

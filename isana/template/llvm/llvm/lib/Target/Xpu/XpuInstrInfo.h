@@ -1,21 +1,21 @@
-//===-- {{ namespace }}InstrInfo.h - {{ namespace }} Instruction Information -*- C++ -*-===//
+//===-- {{ Xpu }}InstrInfo.h - {{ Xpu }} Instruction Information -*- C++ -*-===//
 
-#ifndef LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}INSTRINFO_H
-#define LLVM_LIB_TARGET_{{ namespace.upper() }}_{{ namespace.upper() }}INSTRINFO_H
+#ifndef LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}INSTRINFO_H
+#define LLVM_LIB_TARGET_{{ XPU }}_{{ XPU }}INSTRINFO_H
 
-#include "{{ namespace }}RegisterInfo.h"
+#include "{{ Xpu }}RegisterInfo.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 
 #define GET_INSTRINFO_HEADER
-#include "{{ namespace }}GenInstrInfo.inc"
+#include "{{ Xpu }}GenInstrInfo.inc"
 
 namespace llvm {
 
-class {{ namespace }}Subtarget;
+class {{ Xpu }}Subtarget;
 
-class {{ namespace }}InstrInfo : public {{ namespace }}GenInstrInfo {
+class {{ Xpu }}InstrInfo : public {{ Xpu }}GenInstrInfo {
 public:
-  {{ namespace }}InstrInfo({{ namespace }}Subtarget &STI);
+  {{ Xpu }}InstrInfo({{ Xpu }}Subtarget &STI);
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
@@ -29,7 +29,7 @@ public:
                    bool RenamableSrc = false) const override;
 
 protected:
-  const {{ namespace }}Subtarget &STI;
+  const {{ Xpu }}Subtarget &STI;
 
 private:
   void expandPseudoRET(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;

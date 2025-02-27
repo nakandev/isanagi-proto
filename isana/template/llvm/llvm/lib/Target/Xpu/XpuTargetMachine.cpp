@@ -1,6 +1,7 @@
-//===-- {{ namespace }}TargetMachine.cpp - Define TargetMachine for {{ namespace }} --===//
-#include "{{ namespace }}TargetMachine.h"
-#include "TargetInfo/{{ namespace }}TargetInfo.h"
+//===-- {{ Xpu }}TargetMachine.cpp - Define TargetMachine for {{ Xpu }} --===//
+
+#include "{{ Xpu }}TargetMachine.h"
+#include "TargetInfo/{{ Xpu }}TargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
@@ -11,14 +12,14 @@
 #include <optional>
 using namespace llvm;
 
-extern "C" void LLVMInitialize{{ namespace }}Target() {
-  RegisterTargetMachine<{{ namespace }}TargetMachine> Z(getThe{{ namespace }}32leTarget());
-  RegisterTargetMachine<{{ namespace }}TargetMachine> Y(getThe{{ namespace }}32beTarget());
-  RegisterTargetMachine<{{ namespace }}TargetMachine> X(getThe{{ namespace }}64leTarget());
-  RegisterTargetMachine<{{ namespace }}TargetMachine> W(getThe{{ namespace }}64beTarget());
+extern "C" void LLVMInitialize{{ Xpu }}Target() {
+  RegisterTargetMachine<{{ Xpu }}TargetMachine> Z(getThe{{ Xpu }}32leTarget());
+  RegisterTargetMachine<{{ Xpu }}TargetMachine> Y(getThe{{ Xpu }}32beTarget());
+  RegisterTargetMachine<{{ Xpu }}TargetMachine> X(getThe{{ Xpu }}64leTarget());
+  RegisterTargetMachine<{{ Xpu }}TargetMachine> W(getThe{{ Xpu }}64beTarget());
 
   PassRegistry *Registry = PassRegistry::getPassRegistry();
-  initialize{{ namespace }}DAGToDAGISelLegacyPass(*Registry);
+  initialize{{ Xpu }}DAGToDAGISelLegacyPass(*Registry);
 }
 
 static std::string computeDataLayout(const Triple &TT) {
@@ -35,7 +36,7 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
   return RM.value_or(Reloc::Static);
 }
 
-{{ namespace }}TargetMachine::{{ namespace }}TargetMachine(
+{{ Xpu }}TargetMachine::{{ Xpu }}TargetMachine(
   const Target &T, const Triple &TT,
   StringRef CPU, StringRef FS,
   const TargetOptions &Options,
@@ -54,25 +55,25 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
 }
 
 namespace {
-class {{ namespace }}PassConfig : public TargetPassConfig {
+class {{ Xpu }}PassConfig : public TargetPassConfig {
 public:
-  {{ namespace }}PassConfig({{ namespace }}TargetMachine &TM, PassManagerBase &PM)
+  {{ Xpu }}PassConfig({{ Xpu }}TargetMachine &TM, PassManagerBase &PM)
       : TargetPassConfig(TM, PM) {}
 
-  {{ namespace }}TargetMachine &get{{ namespace }}TargetMachine() const {
-    return getTM<{{ namespace }}TargetMachine>();
+  {{ Xpu }}TargetMachine &get{{ Xpu }}TargetMachine() const {
+    return getTM<{{ Xpu }}TargetMachine>();
   }
 
   bool addInstSelector() override;
 };
 }
 
-bool {{ namespace }}PassConfig::addInstSelector() {
-  addPass(create{{ namespace }}ISelDag(get{{ namespace }}TargetMachine(), getOptLevel()));
+bool {{ Xpu }}PassConfig::addInstSelector() {
+  addPass(create{{ Xpu }}ISelDag(get{{ Xpu }}TargetMachine(), getOptLevel()));
 
   return false;
 }
 
-TargetPassConfig *{{ namespace }}TargetMachine::createPassConfig(PassManagerBase &PM) {
-  return new {{ namespace }}PassConfig(*this, PM);
+TargetPassConfig *{{ Xpu }}TargetMachine::createPassConfig(PassManagerBase &PM) {
+  return new {{ Xpu }}PassConfig(*this, PM);
 }

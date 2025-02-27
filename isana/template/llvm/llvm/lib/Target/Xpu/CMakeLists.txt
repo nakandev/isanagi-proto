@@ -1,64 +1,64 @@
-add_llvm_component_group({{ namespace }})
+add_llvm_component_group({{ Xpu }})
 
-set(LLVM_TARGET_DEFINITIONS {{ namespace }}.td)
+set(LLVM_TARGET_DEFINITIONS {{ Xpu }}.td)
 
-tablegen(LLVM {{ namespace }}GenAsmMatcher.inc -gen-asm-matcher)
-tablegen(LLVM {{ namespace }}GenAsmWriter.inc -gen-asm-writer)
-tablegen(LLVM {{ namespace }}GenCallingConv.inc -gen-callingconv)
-tablegen(LLVM {{ namespace }}GenDAGISel.inc -gen-dag-isel)
-tablegen(LLVM {{ namespace }}GenDisassemblerTables.inc -gen-disassembler)
-# tablegen(LLVM {{ namespace }}GenGlobalISel.inc -gen-global-isel)
-# tablegen(LLVM {{ namespace }}GenPreLegalizeGICombiner.inc -gen-global-isel-combiner
-#               -combiners="{{ namespace }}PreLegalizerCombiner")
-# tablegen(LLVM {{ namespace }}GenPostLegalizeGICombiner.inc -gen-global-isel-combiner
-#               -combiners="{{ namespace }}PostLegalizerCombiner")
-tablegen(LLVM {{ namespace }}GenInstrInfo.inc -gen-instr-info)
-tablegen(LLVM {{ namespace }}GenMCCodeEmitter.inc -gen-emitter)
-tablegen(LLVM {{ namespace }}GenMCPseudoLowering.inc -gen-pseudo-lowering)
-# tablegen(LLVM {{ namespace }}GenRegisterBank.inc -gen-register-bank)
-tablegen(LLVM {{ namespace }}GenRegisterInfo.inc -gen-register-info)
-# tablegen(LLVM {{ namespace }}GenSearchableTables.inc -gen-searchable-tables)
-tablegen(LLVM {{ namespace }}GenSubtargetInfo.inc -gen-subtarget)
+tablegen(LLVM {{ Xpu }}GenAsmMatcher.inc -gen-asm-matcher)
+tablegen(LLVM {{ Xpu }}GenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM {{ Xpu }}GenCallingConv.inc -gen-callingconv)
+tablegen(LLVM {{ Xpu }}GenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM {{ Xpu }}GenDisassemblerTables.inc -gen-disassembler)
+# tablegen(LLVM {{ Xpu }}GenGlobalISel.inc -gen-global-isel)
+# tablegen(LLVM {{ Xpu }}GenPreLegalizeGICombiner.inc -gen-global-isel-combiner
+#               -combiners="{{ Xpu }}PreLegalizerCombiner")
+# tablegen(LLVM {{ Xpu }}GenPostLegalizeGICombiner.inc -gen-global-isel-combiner
+#               -combiners="{{ Xpu }}PostLegalizerCombiner")
+tablegen(LLVM {{ Xpu }}GenInstrInfo.inc -gen-instr-info)
+tablegen(LLVM {{ Xpu }}GenMCCodeEmitter.inc -gen-emitter)
+tablegen(LLVM {{ Xpu }}GenMCPseudoLowering.inc -gen-pseudo-lowering)
+# tablegen(LLVM {{ Xpu }}GenRegisterBank.inc -gen-register-bank)
+tablegen(LLVM {{ Xpu }}GenRegisterInfo.inc -gen-register-info)
+# tablegen(LLVM {{ Xpu }}GenSearchableTables.inc -gen-searchable-tables)
+tablegen(LLVM {{ Xpu }}GenSubtargetInfo.inc -gen-subtarget)
 
-add_public_tablegen_target({{ namespace }}CommonTableGen)
+add_public_tablegen_target({{ Xpu }}CommonTableGen)
 
-add_llvm_target({{ namespace }}CodeGen
-  {{ namespace }}AsmPrinter.cpp
-  # {{ namespace }}CodeGenPrepare.cpp
-  # {{ namespace }}DeadRegisterDefinitions.cpp
-  # {{ namespace }}MakeCompressible.cpp
-  # {{ namespace }}ExpandAtomicPseudoInsts.cpp
-  # {{ namespace }}ExpandPseudoInsts.cpp
-  {{ namespace }}FrameLowering.cpp
-  # {{ namespace }}GatherScatterLowering.cpp
-  # {{ namespace }}IndirectBranchTracking.cpp
-  # {{ namespace }}InsertVSETVLI.cpp
-  # {{ namespace }}InsertReadWriteCSR.cpp
-  # {{ namespace }}InsertWriteVXRM.cpp
-  {{ namespace }}InstrInfo.cpp
-  {{ namespace }}ISelDAGToDAG.cpp
-  {{ namespace }}ISelLowering.cpp
-  # {{ namespace }}LandingPadSetup.cpp
-  # {{ namespace }}MachineFunctionInfo.cpp
-  # {{ namespace }}MergeBaseOffset.cpp
-  # {{ namespace }}OptWInstrs.cpp
-  # {{ namespace }}PostRAExpandPseudoInsts.cpp
-  # {{ namespace }}RedundantCopyElimination.cpp
-  # {{ namespace }}MoveMerger.cpp
-  # {{ namespace }}PushPopOptimizer.cpp
-  {{ namespace }}RegisterInfo.cpp
-  {{ namespace }}Subtarget.cpp
-  {{ namespace }}TargetMachine.cpp
-  # {{ namespace }}TargetObjectFile.cpp
-  # {{ namespace }}TargetTransformInfo.cpp
-  # {{ namespace }}VectorPeephole.cpp
-  # GISel/{{ namespace }}CallLowering.cpp
-  # GISel/{{ namespace }}InstructionSelector.cpp
-  # GISel/{{ namespace }}LegalizerInfo.cpp
-  # GISel/{{ namespace }}PostLegalizerCombiner.cpp
-  # GISel/{{ namespace }}O0PreLegalizerCombiner.cpp
-  # GISel/{{ namespace }}PreLegalizerCombiner.cpp
-  # GISel/{{ namespace }}RegisterBankInfo.cpp
+add_llvm_target({{ Xpu }}CodeGen
+  {{ Xpu }}AsmPrinter.cpp
+  # {{ Xpu }}CodeGenPrepare.cpp
+  # {{ Xpu }}DeadRegisterDefinitions.cpp
+  # {{ Xpu }}MakeCompressible.cpp
+  # {{ Xpu }}ExpandAtomicPseudoInsts.cpp
+  # {{ Xpu }}ExpandPseudoInsts.cpp
+  {{ Xpu }}FrameLowering.cpp
+  # {{ Xpu }}GatherScatterLowering.cpp
+  # {{ Xpu }}IndirectBranchTracking.cpp
+  # {{ Xpu }}InsertVSETVLI.cpp
+  # {{ Xpu }}InsertReadWriteCSR.cpp
+  # {{ Xpu }}InsertWriteVXRM.cpp
+  {{ Xpu }}InstrInfo.cpp
+  {{ Xpu }}ISelDAGToDAG.cpp
+  {{ Xpu }}ISelLowering.cpp
+  # {{ Xpu }}LandingPadSetup.cpp
+  # {{ Xpu }}MachineFunctionInfo.cpp
+  # {{ Xpu }}MergeBaseOffset.cpp
+  # {{ Xpu }}OptWInstrs.cpp
+  # {{ Xpu }}PostRAExpandPseudoInsts.cpp
+  # {{ Xpu }}RedundantCopyElimination.cpp
+  # {{ Xpu }}MoveMerger.cpp
+  # {{ Xpu }}PushPopOptimizer.cpp
+  {{ Xpu }}RegisterInfo.cpp
+  {{ Xpu }}Subtarget.cpp
+  {{ Xpu }}TargetMachine.cpp
+  # {{ Xpu }}TargetObjectFile.cpp
+  # {{ Xpu }}TargetTransformInfo.cpp
+  # {{ Xpu }}VectorPeephole.cpp
+  # GISel/{{ Xpu }}CallLowering.cpp
+  # GISel/{{ Xpu }}InstructionSelector.cpp
+  # GISel/{{ Xpu }}LegalizerInfo.cpp
+  # GISel/{{ Xpu }}PostLegalizerCombiner.cpp
+  # GISel/{{ Xpu }}O0PreLegalizerCombiner.cpp
+  # GISel/{{ Xpu }}PreLegalizerCombiner.cpp
+  # GISel/{{ Xpu }}RegisterBankInfo.cpp
 
   LINK_COMPONENTS
   Analysis
@@ -69,8 +69,8 @@ add_llvm_target({{ namespace }}CodeGen
   GlobalISel
   IPO
   MC
-  {{ namespace }}Desc
-  {{ namespace }}Info
+  {{ Xpu }}Desc
+  {{ Xpu }}Info
   Scalar
   SelectionDAG
   Support
@@ -80,7 +80,7 @@ add_llvm_target({{ namespace }}CodeGen
   Vectorize
 
   ADD_TO_COMPONENT
-  {{ namespace }}
+  {{ Xpu }}
   )
 
 add_subdirectory(AsmParser)

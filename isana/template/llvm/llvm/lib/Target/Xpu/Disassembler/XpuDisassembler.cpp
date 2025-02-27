@@ -1,8 +1,8 @@
-//===- {{ namespace }}Disassembler.cpp - Disassembler for {{ namespace }} -===//
+//===- {{ Xpu }}Disassembler.cpp - Disassembler for {{ Xpu }} -===//
 
-// #include "MCTargetDesc/{{ namespace }}BaseInfo.h"
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
-#include "TargetInfo/{{ namespace }}TargetInfo.h"
+// #include "MCTargetDesc/{{ Xpu }}BaseInfo.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
+#include "TargetInfo/{{ Xpu }}TargetInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDecoderOps.h"
@@ -16,17 +16,17 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-disassembler"
+#define DEBUG_TYPE "{{ xpu }}-disassembler"
 
 typedef MCDisassembler::DecodeStatus DecodeStatus;
 
 namespace {
-class {{ namespace }}Disassembler : public MCDisassembler {
+class {{ Xpu }}Disassembler : public MCDisassembler {
   std::unique_ptr<MCInstrInfo const> const MCII;
   mutable StringRef symbolName;
 
 public:
-  {{ namespace }}Disassembler(const MCSubtargetInfo &STI, MCContext &Ctx,
+  {{ Xpu }}Disassembler(const MCSubtargetInfo &STI, MCContext &Ctx,
                    MCInstrInfo const *MCII);
 
   DecodeStatus getInstruction(MCInst &Instr, uint64_t &Size,
@@ -35,19 +35,19 @@ public:
 };
 } // end anonymous namespace
 
-{{ namespace }}Disassembler::{{ namespace }}Disassembler(const MCSubtargetInfo &STI, MCContext &Ctx,
+{{ Xpu }}Disassembler::{{ Xpu }}Disassembler(const MCSubtargetInfo &STI, MCContext &Ctx,
                                    MCInstrInfo const *MCII)
     : MCDisassembler(STI, Ctx), MCII(MCII) {}
 
-static MCDisassembler *create{{ namespace }}Disassembler(const Target &T,
+static MCDisassembler *create{{ Xpu }}Disassembler(const Target &T,
                                               const MCSubtargetInfo &STI,
                                               MCContext &Ctx) {
-  return new {{ namespace }}Disassembler(STI, Ctx, T.createMCInstrInfo());
+  return new {{ Xpu }}Disassembler(STI, Ctx, T.createMCInstrInfo());
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}Disassembler() {
-  TargetRegistry::RegisterMCDisassembler(getThe{{ namespace }}32leTarget(),
-                                         create{{ namespace }}Disassembler);
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ Xpu }}Disassembler() {
+  TargetRegistry::RegisterMCDisassembler(getThe{{ Xpu }}32leTarget(),
+                                         create{{ Xpu }}Disassembler);
 }
 
 {#
@@ -71,7 +71,7 @@ static DecodeStatus Decode{{ regcls.varname }}RegisterClass(MCInst &Inst, uint64
   default:
     return MCDisassembler::Fail;
   {% for reg in regcls.regs -%}
-  case {{ reg.number }}: RegVar = {{ namespace }}::{{ reg.label.upper() }}; break;
+  case {{ reg.number }}: RegVar = {{ Xpu }}::{{ reg.label.upper() }}; break;
   {% endfor %}
   }
   Inst.addOperand(MCOperand::createReg(RegVar));
@@ -105,9 +105,9 @@ static DecodeStatus decodeImmShiftOpValue(MCInst &Inst, uint64_t Imm,
   return MCDisassembler::Success;
 }
 
-#include "{{ namespace }}GenDisassemblerTables.inc"
+#include "{{ Xpu }}GenDisassemblerTables.inc"
 
-DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &Size,
+DecodeStatus {{ Xpu }}Disassembler::getInstruction(MCInst &MI, uint64_t &Size,
                                               ArrayRef<uint8_t> Bytes,
                                               uint64_t Address,
                                               raw_ostream &CS) const {
@@ -122,8 +122,8 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
 
   {% if 16 in instr_bitsizes -%}
   Insn = support::endian::read16le(Bytes.data());
-  LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 16-bit table :\n");
-  Result = decodeInstruction(DecoderTable{{ namespace }}16, MI, Insn, Address, this, STI);
+  LLVM_DEBUG(dbgs() << "Trying {{ Xpu }} 16-bit table :\n");
+  Result = decodeInstruction(DecoderTable{{ Xpu }}16, MI, Insn, Address, this, STI);
   if (Result != MCDisassembler::Fail) {
     Size = 2;
     return Result;
@@ -131,8 +131,8 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
   {%- endif %}
   {%- if 32 in instr_bitsizes -%}
   Insn = support::endian::read32le(Bytes.data());
-  LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 32-bit table :\n");
-  Result = decodeInstruction(DecoderTable{{ namespace }}32, MI, Insn, Address, this, STI);
+  LLVM_DEBUG(dbgs() << "Trying {{ Xpu }} 32-bit table :\n");
+  Result = decodeInstruction(DecoderTable{{ Xpu }}32, MI, Insn, Address, this, STI);
   if (Result != MCDisassembler::Fail) {
     Size = 4;
     return Result;
@@ -140,8 +140,8 @@ DecodeStatus {{ namespace }}Disassembler::getInstruction(MCInst &MI, uint64_t &S
   {%- endif %}
   {%- if 64 in instr_bitsizes -%}
   Insn = support::endian::read32le(Bytes.data());
-  LLVM_DEBUG(dbgs() << "Trying {{ namespace }} 64-bit table :\n");
-  Result = decodeInstruction(DecoderTable{{ namespace }}64, MI, Insn, Address, this, STI);
+  LLVM_DEBUG(dbgs() << "Trying {{ Xpu }} 64-bit table :\n");
+  Result = decodeInstruction(DecoderTable{{ Xpu }}64, MI, Insn, Address, this, STI);
   if (Result != MCDisassembler::Fail) {
     Size = 8;
     return Result;

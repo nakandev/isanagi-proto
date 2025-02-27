@@ -1,8 +1,8 @@
-//===-- {{ namespace }}RegisterInfo.cpp - {{ namespace }} Register Information -*- C++ -*-===//
+//===-- {{ Xpu }}RegisterInfo.cpp - {{ Xpu }} Register Information -*- C++ -*-===//
 
-#include "{{ namespace }}RegisterInfo.h"
-#include "{{ namespace }}.h"
-#include "{{ namespace }}Subtarget.h"
+#include "{{ Xpu }}RegisterInfo.h"
+#include "{{ Xpu }}.h"
+#include "{{ Xpu }}Subtarget.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
@@ -14,36 +14,36 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-reg-info"
+#define DEBUG_TYPE "{{ xpu }}-reg-info"
 
 #define GET_REGINFO_TARGET_DESC
-#include "{{ namespace }}GenRegisterInfo.inc"
+#include "{{ Xpu }}GenRegisterInfo.inc"
 
-{{ namespace }}RegisterInfo::{{ namespace }}RegisterInfo()
-    : {{ namespace }}GenRegisterInfo({{ namespace }}::{{ reg0 }}) {}
+{{ Xpu }}RegisterInfo::{{ Xpu }}RegisterInfo()
+    : {{ Xpu }}GenRegisterInfo({{ Xpu }}::{{ reg0 }}) {}
 
 const MCPhysReg *
-{{ namespace }}RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
+{{ Xpu }}RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   return CSR_ABI0_SaveList;
 }
 
 const uint32_t *
-{{ namespace }}RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
+{{ Xpu }}RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
                                             CallingConv::ID CC) const {
   return CSR_ABI0_RegMask;
 }
 
 BitVector
-{{ namespace }}RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+{{ Xpu }}RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
   {% for reg in reserved_regs -%}
-  markSuperRegs(Reserved, {{ namespace }}::{{ reg }});
+  markSuperRegs(Reserved, {{ Xpu }}::{{ reg }});
   {% endfor -%}
   return Reserved;
 }
 
 bool
-{{ namespace }}RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MBBI,
+{{ Xpu }}RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MBBI,
                                            int SPAdj, unsigned FIOperandNum,
                                            RegScavenger *RS) const {
   MachineInstr &MI = *MBBI;
@@ -56,7 +56,7 @@ bool
     assert(i < MI.getNumOperands() && "Instr doesn't have FrameIndex operand!");
   }
 
-  Register FrameReg = {{ namespace }}::X2;
+  Register FrameReg = {{ Xpu }}::X2;
   int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
   uint64_t StackSize = MF.getFrameInfo().getStackSize();
   int64_t SpOffset = MF.getFrameInfo().getObjectOffset(FrameIndex);
@@ -76,7 +76,7 @@ bool
   auto II = MBBI.getReverse();
   for (; II != MBB.rend(); II++) {
     MachineInstr &MII = *II;
-    if (MII.getOpcode() == {{ namespace }}::ADDI && MII.getOperand(0).getReg() == RegT1) {
+    if (MII.getOpcode() == {{ Xpu }}::ADDI && MII.getOperand(0).getReg() == RegT1) {
       Addi = &MII;
       RegT0 = MII.getOperand(1).getReg();
       break;
@@ -84,7 +84,7 @@ bool
   }
   for (; II != MBB.rend(); II++) {
     MachineInstr &MII = *II;
-    if (MII.getOpcode() == {{ namespace }}::LUI && MII.getOperand(0).getReg() == RegT0) {
+    if (MII.getOpcode() == {{ Xpu }}::LUI && MII.getOperand(0).getReg() == RegT0) {
       Lui = &MII;
       break;
     }
@@ -109,7 +109,7 @@ bool
 }
 
 Register
-{{ namespace }}RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+{{ Xpu }}RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = getFrameLowering(MF);
-  return TFI->hasFP(MF) ? {{ namespace }}::{{ fp }} : {{ namespace }}::{{ sp }};
+  return TFI->hasFP(MF) ? {{ Xpu }}::{{ fp }} : {{ Xpu }}::{{ sp }};
 }

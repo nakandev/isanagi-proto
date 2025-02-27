@@ -1,13 +1,13 @@
-//===-- {{ namespace }}AsmPrinter.cpp - {{ namespace }} LLVM assembly writer --===//
+//===-- {{ Xpu }}AsmPrinter.cpp - {{ Xpu }} LLVM assembly writer --===//
 
-#include "{{ namespace }}.h"
-#include "{{ namespace }}InstrInfo.h"
-#include "{{ namespace }}TargetMachine.h"
-#include "MCTargetDesc/{{ namespace }}BaseInfo.h"
-#include "MCTargetDesc/{{ namespace }}InstPrinter.h"
-#include "MCTargetDesc/{{ namespace }}MCExpr.h"
-// #include "MCTargetDesc/{{ namespace }}TargetStreamer.h"
-#include "TargetInfo/{{ namespace }}TargetInfo.h"
+#include "{{ Xpu }}.h"
+#include "{{ Xpu }}InstrInfo.h"
+#include "{{ Xpu }}TargetMachine.h"
+#include "MCTargetDesc/{{ Xpu }}BaseInfo.h"
+#include "MCTargetDesc/{{ Xpu }}InstPrinter.h"
+#include "MCTargetDesc/{{ Xpu }}MCExpr.h"
+// #include "MCTargetDesc/{{ Xpu }}TargetStreamer.h"
+#include "TargetInfo/{{ Xpu }}TargetInfo.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
@@ -26,13 +26,13 @@ using namespace llvm;
 #define DEBUG_TYPE "asm-printer"
 
 namespace {
-class {{ namespace }}AsmPrinter : public AsmPrinter {
+class {{ Xpu }}AsmPrinter : public AsmPrinter {
 public:
-  explicit {{ namespace }}AsmPrinter(TargetMachine &TM,
+  explicit {{ Xpu }}AsmPrinter(TargetMachine &TM,
                          std::unique_ptr<MCStreamer> Streamer)
       : AsmPrinter(TM, std::move(Streamer)) {}
 
-  StringRef getPassName() const override { return "{{ namespace }} Assembly Printer"; }
+  StringRef getPassName() const override { return "{{ Xpu }} Assembly Printer"; }
   // bool doInitialization(Module &M) override;
   // bool doFinalization(Module &M) override;
 
@@ -58,10 +58,10 @@ public:
 
 // Simple pseudo-instructions have their lowering (with expansion to real
 // instructions) auto-generated.
-#include "{{ namespace }}GenMCPseudoLowering.inc"
+#include "{{ Xpu }}GenMCPseudoLowering.inc"
 
-void {{ namespace }}AsmPrinter::emitInstruction(const MachineInstr *MI) {
-  {{ namespace }}_MC::verifyInstructionPredicates(MI->getOpcode(),
+void {{ Xpu }}AsmPrinter::emitInstruction(const MachineInstr *MI) {
+  {{ Xpu }}_MC::verifyInstructionPredicates(MI->getOpcode(),
                                       getSubtargetInfo().getFeatureBits());
 
   // Do any auto-generated pseudo lowerings.
@@ -78,19 +78,19 @@ void {{ namespace }}AsmPrinter::emitInstruction(const MachineInstr *MI) {
 static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
                                     const AsmPrinter &AP) {
   MCContext &Ctx = AP.OutContext;
-  {{ namespace }}MCExpr::VariantKind Kind;
+  {{ Xpu }}MCExpr::VariantKind Kind;
 
   switch(MO.getTargetFlags()) {
   default:
     llvm_unreachable("Unknown target flag on GV operand");
-  case {{ namespace }}II::MO_None:
-    Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+  case {{ Xpu }}II::MO_None:
+    Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_None;
     break;
-  case {{ namespace }}II::MO_CALL:
-    Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_CALL;
+  case {{ Xpu }}II::MO_CALL:
+    Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL;
     break;
-  // case {{ namespace }}II::MO_SYMBOL:
-  //   Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_SYMBOL;
+  // case {{ Xpu }}II::MO_SYMBOL:
+  //   Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_SYMBOL;
   //   break;
   }
 
@@ -101,12 +101,12 @@ static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
     ME = MCBinaryExpr::createAdd(
         ME, MCConstantExpr::create(MO.getOffset(), Ctx), Ctx);
 
-  if (Kind != {{ namespace }}MCExpr::VK_{{ namespace }}_None)
-    ME = {{ namespace }}MCExpr::create(ME, Kind, Ctx);
+  if (Kind != {{ Xpu }}MCExpr::VK_{{ Xpu }}_None)
+    ME = {{ Xpu }}MCExpr::create(ME, Kind, Ctx);
   return MCOperand::createExpr(ME);
 }
 
-bool {{ namespace }}AsmPrinter::lowerOperand(const MachineOperand &MO,
+bool {{ Xpu }}AsmPrinter::lowerOperand(const MachineOperand &MO,
                                    MCOperand &MCOp) const {
   switch (MO.getType()) {
   default:
@@ -150,7 +150,7 @@ bool {{ namespace }}AsmPrinter::lowerOperand(const MachineOperand &MO,
   return true;
 }
 
-bool {{ namespace }}AsmPrinter::lowerToMCInst(const MachineInstr *MI, MCInst &OutMI) {
+bool {{ Xpu }}AsmPrinter::lowerToMCInst(const MachineInstr *MI, MCInst &OutMI) {
   OutMI.setOpcode(MI->getOpcode());
 
   for (const MachineOperand &MO : MI->operands()) {
@@ -163,9 +163,9 @@ bool {{ namespace }}AsmPrinter::lowerToMCInst(const MachineInstr *MI, MCInst &Ou
 }
 
 // Force static initialization.
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}AsmPrinter() {
-  RegisterAsmPrinter<{{ namespace }}AsmPrinter> Z(getThe{{ namespace }}32leTarget());
-  RegisterAsmPrinter<{{ namespace }}AsmPrinter> Y(getThe{{ namespace }}32beTarget());
-  RegisterAsmPrinter<{{ namespace }}AsmPrinter> X(getThe{{ namespace }}64leTarget());
-  RegisterAsmPrinter<{{ namespace }}AsmPrinter> W(getThe{{ namespace }}64beTarget());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ Xpu }}AsmPrinter() {
+  RegisterAsmPrinter<{{ Xpu }}AsmPrinter> Z(getThe{{ Xpu }}32leTarget());
+  RegisterAsmPrinter<{{ Xpu }}AsmPrinter> Y(getThe{{ Xpu }}32beTarget());
+  RegisterAsmPrinter<{{ Xpu }}AsmPrinter> X(getThe{{ Xpu }}64leTarget());
+  RegisterAsmPrinter<{{ Xpu }}AsmPrinter> W(getThe{{ Xpu }}64beTarget());
 }

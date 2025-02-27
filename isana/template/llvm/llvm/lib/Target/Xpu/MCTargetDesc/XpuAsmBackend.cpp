@@ -1,7 +1,7 @@
-//===- {{ namespace }}AsmBackend.cpp - {{ namespace }} Assembler Backend -===//
+//===- {{ Xpu }}AsmBackend.cpp - {{ Xpu }} Assembler Backend -===//
 
-#include "{{ namespace }}AsmBackend.h"
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
+#include "{{ Xpu }}AsmBackend.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
@@ -11,29 +11,29 @@
 #include "llvm/MC/MCValue.h"
 #include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-asmbackend"
+#define DEBUG_TYPE "{{ xpu }}-asmbackend"
 
 using namespace llvm;
 
 std::unique_ptr<MCObjectTargetWriter>
-{{ namespace }}AsmBackend::createObjectTargetWriter(
+{{ Xpu }}AsmBackend::createObjectTargetWriter(
 ) const
 {
-  return create{{ namespace }}ELFObjectWriter();
+  return create{{ Xpu }}ELFObjectWriter();
 }
 
 const MCFixupKindInfo &
-{{ namespace }}AsmBackend::getFixupKindInfo(
+{{ Xpu }}AsmBackend::getFixupKindInfo(
   MCFixupKind Kind
 ) const
 {
   static llvm::DenseMap<unsigned, MCFixupKindInfo> Infos = {
       {% for fx in fixups -%}
-      { {{ namespace }}::Fixups::{{ fx.name_enum }}, {"{{ fx.name_enum }}", {{ fx.offset }}, {{ fx.size }}, {{ fx.flags }}} },
+      { {{ Xpu }}::Fixups::{{ fx.name_enum }}, {"{{ fx.name_enum }}", {{ fx.offset }}, {{ fx.size }}, {{ fx.flags }}} },
       {% endfor %}
   };
 
-  assert(Infos.size() == {{ namespace }}::NumTargetFixupKinds &&
+  assert(Infos.size() == {{ Xpu }}::NumTargetFixupKinds &&
          "Not all fixup kinds added to Infos array");
 
   if (FirstTargetFixupKind <= Kind && Kind < FirstLiteralRelocationKind) {
@@ -63,11 +63,11 @@ adjustFixupValue(
   case FK_Data_8:
     return Value;
   {% for fx in fixups_should_force_reloc -%}
-  case {{ namespace }}::{{ fx.name_enum }}:
+  case {{ Xpu }}::{{ fx.name_enum }}:
     llvm_unreachable("Relocation should be unconditionally forced\n");
   {% endfor %}
   {% for fx in fixups_adjust -%}
-  case {{ namespace }}::{{ fx.name_enum }}: {
+  case {{ Xpu }}::{{ fx.name_enum }}: {
     const uint64_t val = Value;  // TODO: remove unused variable
     return 0
     {% for proc in fx.reloc_procs -%}
@@ -81,7 +81,7 @@ adjustFixupValue(
 }
 
 bool
-{{ namespace }}AsmBackend::fixupNeedsRelaxationAdvanced(
+{{ Xpu }}AsmBackend::fixupNeedsRelaxationAdvanced(
   const MCAssembler &Asm,
   const MCFixup &Fixup,
   bool Resolved, uint64_t Value,
@@ -96,14 +96,14 @@ bool
   switch (Fixup.getTargetKind()) {
   default:
     break;
-  // case {{ namespace }}::fixup_xxx:
+  // case {{ Xpu }}::fixup_xxx:
   //   return is_out_of_range(Value);
   }
   return false;
 }
 
 void
-{{ namespace }}AsmBackend::applyFixup(
+{{ Xpu }}AsmBackend::applyFixup(
   const MCAssembler &Asm, const MCFixup &Fixup,
   const MCValue &Target,
   MutableArrayRef<char> Data, uint64_t Value,
@@ -144,7 +144,7 @@ void
 }
 
 bool
-{{ namespace }}AsmBackend::mayNeedRelaxation(
+{{ Xpu }}AsmBackend::mayNeedRelaxation(
   const MCInst &Inst,
   const MCSubtargetInfo &STI
 ) const
@@ -153,14 +153,14 @@ bool
   default:
     return false;
   {% for r_instr in relax_instrs -%}
-  // case {{ namespace }}::{{ r_instr.opc_enum }}:
+  // case {{ Xpu }}::{{ r_instr.opc_enum }}:
   //   return true;
   {% endfor %}
   }
 }
 
 bool
-{{ namespace }}AsmBackend::shouldForceRelocation(
+{{ Xpu }}AsmBackend::shouldForceRelocation(
   const MCAssembler &Asm,
   const MCFixup &Fixup,
   const MCValue &Target,
@@ -181,7 +181,7 @@ bool
       return false;
     break;
   {% for fx in fixups_should_force_reloc -%}
-  case {{ namespace }}::{{ fx.name_enum }}:
+  case {{ Xpu }}::{{ fx.name_enum }}:
     return true;
   {% endfor -%}
   }
@@ -190,7 +190,7 @@ bool
 }
 
 bool
-{{ namespace }}AsmBackend::fixupNeedsRelaxation(
+{{ Xpu }}AsmBackend::fixupNeedsRelaxation(
   const MCFixup &Fixup,
   uint64_t Value
 ) const
@@ -199,7 +199,7 @@ bool
 }
 
 void
-{{ namespace }}AsmBackend::relaxInstruction(
+{{ Xpu }}AsmBackend::relaxInstruction(
   MCInst &Inst,
   const MCSubtargetInfo &STI
 ) const
@@ -211,8 +211,8 @@ void
     LLVM_DEBUG(Inst.dump());
     llvm_unreachable("Opcode not expected!");
   {% for r_instr in relax_instrs -%}
-  case {{ namespace }}::{{ r_instr.opc_enum }}:
-  //   Res.setOpcode({{ namespace }}::{{ r_instr.opc_enum }});
+  case {{ Xpu }}::{{ r_instr.opc_enum }}:
+  //   Res.setOpcode({{ Xpu }}::{{ r_instr.opc_enum }});
   //   Res.addOperand(Inst.getOperand(0));
   //   Res.addOperand(Inst.getOperand(1));
     break;
@@ -222,7 +222,7 @@ void
 }
 
 bool
-{{ namespace }}AsmBackend::writeNopData(
+{{ Xpu }}AsmBackend::writeNopData(
   raw_ostream &OS, uint64_t Count,
   const MCSubtargetInfo *STI
 ) const
@@ -232,12 +232,12 @@ bool
 }
 
 MCAsmBackend *
-llvm::create{{ namespace }}AsmBackend(
+llvm::create{{ Xpu }}AsmBackend(
   const Target &T,
   const MCSubtargetInfo &STI,
   const MCRegisterInfo &MRI,
   const MCTargetOptions &Options
 )
 {
-  return new {{ namespace }}AsmBackend(STI, Options);
+  return new {{ Xpu }}AsmBackend(STI, Options);
 }

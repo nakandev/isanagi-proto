@@ -1,8 +1,8 @@
-//===- {{ namespace }}AsmParser.cpp - Parse {{ namespace }} assembly to MCInst instructions -===//
+//===- {{ Xpu }}AsmParser.cpp - Parse {{ Xpu }} assembly to MCInst instructions -===//
 
-#include "MCTargetDesc/{{ namespace }}MCExpr.h"
-#include "MCTargetDesc/{{ namespace }}MCTargetDesc.h"
-#include "TargetInfo/{{ namespace }}TargetInfo.h"
+#include "MCTargetDesc/{{ Xpu }}MCExpr.h"
+#include "MCTargetDesc/{{ Xpu }}MCTargetDesc.h"
+#include "TargetInfo/{{ Xpu }}TargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/MC/MCContext.h"
@@ -20,12 +20,12 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "{{ namespace.lower() }}-asm-parser"
+#define DEBUG_TYPE "{{ xpu }}-asm-parser"
 
 namespace {
-struct {{ namespace }}Operand;
+struct {{ Xpu }}Operand;
 
-class {{ namespace }}AsmParser : public MCTargetAsmParser {
+class {{ Xpu }}AsmParser : public MCTargetAsmParser {
 
   SMLoc getLoc() const { return getParser().getTok().getLoc(); }
 
@@ -50,7 +50,7 @@ class {{ namespace }}AsmParser : public MCTargetAsmParser {
   bool starIsStartOfStatement() override { return true; }
 
 #define GET_ASSEMBLER_HEADER
-#include "{{ namespace }}GenAsmMatcher.inc"
+#include "{{ Xpu }}GenAsmMatcher.inc"
 
   ParseStatus parseImmediate(OperandVector &Operands);
   ParseStatus parseMemOpBaseReg(OperandVector &Operands);
@@ -62,17 +62,17 @@ class {{ namespace }}AsmParser : public MCTargetAsmParser {
   bool parseOperand(OperandVector &Operands, StringRef Mnemonic);
 
 public:
-  enum {{ namespace }}MatchResultTy {
+  enum {{ Xpu }}MatchResultTy {
     Match_Dummy = FIRST_TARGET_MATCH_RESULT_TY,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
-#include "{{ namespace }}GenAsmMatcher.inc"
+#include "{{ Xpu }}GenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
   };
 
   static bool classifySymbolRef(const MCExpr *Expr,
-                                {{ namespace }}MCExpr::VariantKind &Kind);
+                                {{ Xpu }}MCExpr::VariantKind &Kind);
 
-  {{ namespace }}AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
+  {{ Xpu }}AsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
                const MCInstrInfo &MII, const MCTargetOptions &Options)
       : MCTargetAsmParser(Options, STI, MII) {
     MCAsmParserExtension::Initialize(Parser);
@@ -84,9 +84,9 @@ public:
   }
 };
 
-/// {{ namespace }}Operand - Instances of this class represent a parsed machine
+/// {{ Xpu }}Operand - Instances of this class represent a parsed machine
 /// instruction
-struct {{ namespace }}Operand : public MCParsedAsmOperand {
+struct {{ Xpu }}Operand : public MCParsedAsmOperand {
 
   enum KindTy {
     Token,
@@ -109,10 +109,10 @@ struct {{ namespace }}Operand : public MCParsedAsmOperand {
     ImmOp Imm;
   };
 
-  {{ namespace }}Operand(KindTy K) : Kind(K) {}
+  {{ Xpu }}Operand(KindTy K) : Kind(K) {}
 
 public:
-  {{ namespace }}Operand(const {{ namespace }}Operand &o) : MCParsedAsmOperand() {
+  {{ Xpu }}Operand(const {{ Xpu }}Operand &o) : MCParsedAsmOperand() {
     Kind = o.Kind;
     StartLoc = o.StartLoc;
     EndLoc = o.EndLoc;
@@ -136,14 +136,14 @@ public:
   bool isMem() const override { return false; }
 
   static bool evaluateConstantImm(const MCExpr *Expr, int64_t &Imm,
-                                  {{ namespace }}MCExpr::VariantKind &VK) {
-    if (auto *RE = dyn_cast<{{ namespace }}MCExpr>(Expr)) {
+                                  {{ Xpu }}MCExpr::VariantKind &VK) {
+    if (auto *RE = dyn_cast<{{ Xpu }}MCExpr>(Expr)) {
       VK = RE->getKind();
       return RE->evaluateAsConstant(Imm);
     }
 
     if (auto CE = dyn_cast<MCConstantExpr>(Expr)) {
-      VK = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+      VK = {{ Xpu }}MCExpr::VK_{{ Xpu }}_None;
       Imm = CE->getValue();
       return true;
     }
@@ -153,12 +153,12 @@ public:
 
   bool isCallSymbol() const {
     int64_t Imm;
-    {{ namespace }}MCExpr::VariantKind VK = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+    {{ Xpu }}MCExpr::VariantKind VK = {{ Xpu }}MCExpr::VK_{{ Xpu }}_None;
     // Must be of 'immediate' type but not a constant.
     if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
       return false;
-    return {{ namespace }}AsmParser::classifySymbolRef(getImm(), VK) &&
-           (VK == {{ namespace }}MCExpr::VK_{{ namespace }}_CALL); // TODO fix it
+    return {{ Xpu }}AsmParser::classifySymbolRef(getImm(), VK) &&
+           (VK == {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL); // TODO fix it
   }
 
   bool isConstantImm() const {
@@ -233,26 +233,26 @@ public:
     addExpr(Inst, getImm());
   }
 
-  static std::unique_ptr<{{ namespace }}Operand> createToken(StringRef Str, SMLoc S) {
-    auto Op = std::make_unique<{{ namespace }}Operand>(Token);
+  static std::unique_ptr<{{ Xpu }}Operand> createToken(StringRef Str, SMLoc S) {
+    auto Op = std::make_unique<{{ Xpu }}Operand>(Token);
     Op->Tok = Str;
     Op->StartLoc = S;
     Op->EndLoc = S;
     return Op;
   }
 
-  static std::unique_ptr<{{ namespace }}Operand> createReg(unsigned RegNo, SMLoc S,
+  static std::unique_ptr<{{ Xpu }}Operand> createReg(unsigned RegNo, SMLoc S,
                                                SMLoc E) {
-    auto Op = std::make_unique<{{ namespace }}Operand>(Register);
+    auto Op = std::make_unique<{{ Xpu }}Operand>(Register);
     Op->Reg.RegNum = RegNo;
     Op->StartLoc = S;
     Op->EndLoc = E;
     return Op;
   }
 
-  static std::unique_ptr<{{ namespace }}Operand> createImm(const MCExpr *Val, SMLoc S,
+  static std::unique_ptr<{{ Xpu }}Operand> createImm(const MCExpr *Val, SMLoc S,
                                                SMLoc E) {
-    auto Op = std::make_unique<{{ namespace }}Operand>(Immediate);
+    auto Op = std::make_unique<{{ Xpu }}Operand>(Immediate);
     Op->Imm.Val = Val;
     Op->StartLoc = S;
     Op->EndLoc = E;
@@ -263,9 +263,9 @@ public:
 
 #define GET_REGISTER_MATCHER
 #define GET_MATCHER_IMPLEMENTATION
-#include "{{ namespace }}GenAsmMatcher.inc"
+#include "{{ Xpu }}GenAsmMatcher.inc"
 
-bool {{ namespace }}AsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
+bool {{ Xpu }}AsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                            OperandVector &Operands,
                                            MCStreamer &Out, uint64_t &ErrorInfo,
                                            bool MatchingInlineAsm) {
@@ -290,7 +290,7 @@ bool {{ namespace }}AsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Op
       if (ErrorInfo >= Operands.size())
         return Error(ErrorLoc, "too few operands for instruction");
 
-      ErrorLoc = (({{ namespace }}Operand &)*Operands[ErrorInfo]).getStartLoc();
+      ErrorLoc = (({{ Xpu }}Operand &)*Operands[ErrorInfo]).getStartLoc();
 
       if (ErrorLoc == SMLoc())
         ErrorLoc = IDLoc;
@@ -308,19 +308,19 @@ bool {{ namespace }}AsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Op
   llvm_unreachable("Unknown match type detected!");
 }
 
-bool {{ namespace }}AsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
+bool {{ Xpu }}AsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
                                  SMLoc &EndLoc) {
   if (!tryParseRegister(Reg, StartLoc, EndLoc).isSuccess())
     return Error(StartLoc, "invalid register name");
   return false;
 }
 
-ParseStatus {{ namespace }}AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
+ParseStatus {{ Xpu }}AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
                                            SMLoc &EndLoc) {
   const AsmToken &Tok = getParser().getTok();
   StartLoc = Tok.getLoc();
   EndLoc = Tok.getEndLoc();
-  Reg = {{ namespace }}::NoRegister;
+  Reg = {{ Xpu }}::NoRegister;
   StringRef Name = getLexer().getTok().getIdentifier();
 
   if (!MatchRegisterName(Name)) {
@@ -331,7 +331,7 @@ ParseStatus {{ namespace }}AsmParser::tryParseRegister(MCRegister &Reg, SMLoc &S
   return ParseStatus::NoMatch;
 }
 
-ParseStatus {{ namespace }}AsmParser::parseRegister(OperandVector &Operands) {
+ParseStatus {{ Xpu }}AsmParser::parseRegister(OperandVector &Operands) {
   SMLoc S = getLoc();
   SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
 
@@ -346,12 +346,12 @@ ParseStatus {{ namespace }}AsmParser::parseRegister(OperandVector &Operands) {
       return ParseStatus::NoMatch;
 
     getLexer().Lex();
-    Operands.push_back({{ namespace }}Operand::createReg(RegNo, S, E));
+    Operands.push_back({{ Xpu }}Operand::createReg(RegNo, S, E));
   }
   return ParseStatus::Success;
 }
 
-ParseStatus {{ namespace }}AsmParser::parseImmediate(OperandVector &Operands) {
+ParseStatus {{ Xpu }}AsmParser::parseImmediate(OperandVector &Operands) {
   switch (getLexer().getKind()) {
   default:
     return ParseStatus::NoMatch;
@@ -371,28 +371,28 @@ ParseStatus {{ namespace }}AsmParser::parseImmediate(OperandVector &Operands) {
     return ParseStatus::Failure;
 
   SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
-  Operands.push_back({{ namespace }}Operand::createImm(IdVal, S, E));
+  Operands.push_back({{ Xpu }}Operand::createImm(IdVal, S, E));
 
   return ParseStatus::Success;
 }
 
-ParseStatus {{ namespace }}AsmParser::parseMemOpBaseReg(OperandVector &Operands) {
+ParseStatus {{ Xpu }}AsmParser::parseMemOpBaseReg(OperandVector &Operands) {
   if (parseToken(AsmToken::LParen, "expected '('"))
     return ParseStatus::Failure;
-  Operands.push_back({{ namespace }}Operand::createToken("(", getLoc()));
+  Operands.push_back({{ Xpu }}Operand::createToken("(", getLoc()));
 
   if (!parseRegister(Operands).isSuccess())
     return Error(getLoc(), "expected register");
 
   if (parseToken(AsmToken::RParen, "expected ')'"))
     return ParseStatus::Failure;
-  Operands.push_back({{ namespace }}Operand::createToken(")", getLoc()));
+  Operands.push_back({{ Xpu }}Operand::createToken(")", getLoc()));
 
   return ParseStatus::Success;
 }
 
 {% for asmopcls in asm_operand_clss -%}
-ParseStatus {{ namespace }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVector &Operands) {
+ParseStatus {{ Xpu }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVector &Operands) {
   SMLoc S = getLoc();
   SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
 
@@ -411,7 +411,7 @@ ParseStatus {{ namespace }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVecto
       return ParseStatus::NoMatch;
 
     getLexer().Lex();
-    Operands.push_back({{ namespace }}Operand::createImm(
+    Operands.push_back({{ Xpu }}Operand::createImm(
       MCConstantExpr::create(ImmVal, getContext()), S, E)
     );
     break;
@@ -420,7 +420,7 @@ ParseStatus {{ namespace }}AsmParser::parse{{ asmopcls.name }}AsmOp(OperandVecto
 }
 {% endfor %}
 
-ParseStatus {{ namespace }}AsmParser::parseCallSymbol(OperandVector &Operands) {
+ParseStatus {{ Xpu }}AsmParser::parseCallSymbol(OperandVector &Operands) {
   SMLoc S = getLoc();
   SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
   const MCExpr *Res;
@@ -437,18 +437,18 @@ ParseStatus {{ namespace }}AsmParser::parseCallSymbol(OperandVector &Operands) {
     return ParseStatus::Failure;
 
   // TODO fix it
-  {{ namespace }}MCExpr::VariantKind Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_CALL;
+  {{ Xpu }}MCExpr::VariantKind Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL;
   // if (Identifier.consume_back("@plt"))
-  //   Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_CALL_PLT;
+  //   Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL_PLT;
 
   MCSymbol *Sym = getContext().getOrCreateSymbol(Identifier);
   Res = MCSymbolRefExpr::create(Sym, MCSymbolRefExpr::VK_None, getContext());
-  Res = {{ namespace }}MCExpr::create(Res, Kind, getContext());
-  Operands.push_back({{ namespace }}Operand::createImm(Res, S, E));
+  Res = {{ Xpu }}MCExpr::create(Res, Kind, getContext());
+  Operands.push_back({{ Xpu }}Operand::createImm(Res, S, E));
   return ParseStatus::Success;
 }
 
-bool {{ namespace }}AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
+bool {{ Xpu }}AsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
   // Check if the current operand has a custom associated parser, if so, try to
   // custom parse the operand, or fallback to the general approach.
 {% if asm_operand_clss|length == 0 %}#if 0 // no custom parser{% endif %}
@@ -477,12 +477,12 @@ bool {{ namespace }}AsmParser::parseOperand(OperandVector &Operands, StringRef M
   return true;
 }
 
-/// ParseInstruction - Parse an {{ namespace }} instruction which is in {{ namespace }} verifier
+/// ParseInstruction - Parse an {{ Xpu }} instruction which is in {{ Xpu }} verifier
 /// format. Return true if failure.
-bool {{ namespace }}AsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
+bool {{ Xpu }}AsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
                                     SMLoc NameLoc, OperandVector &Operands) {
   // Parse token as operator nimonic
-  Operands.push_back({{ namespace }}Operand::createToken(Name, NameLoc));
+  Operands.push_back({{ Xpu }}Operand::createToken(Name, NameLoc));
 
   // If there are no more operands, then finish
   if (getLexer().is(AsmToken::EndOfStatement)) {
@@ -508,11 +508,11 @@ bool {{ namespace }}AsmParser::ParseInstruction(ParseInstructionInfo &Info, Stri
   return false;
 }
 
-bool {{ namespace }}AsmParser::classifySymbolRef(const MCExpr *Expr,
-                                       {{ namespace }}MCExpr::VariantKind &Kind) {
-  Kind = {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+bool {{ Xpu }}AsmParser::classifySymbolRef(const MCExpr *Expr,
+                                       {{ Xpu }}MCExpr::VariantKind &Kind) {
+  Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_None;
 
-  if (const {{ namespace }}MCExpr *RE = dyn_cast<{{ namespace }}MCExpr>(Expr)) {
+  if (const {{ Xpu }}MCExpr *RE = dyn_cast<{{ Xpu }}MCExpr>(Expr)) {
     Kind = RE->getKind();
     Expr = RE->getSubExpr();
   }
@@ -520,13 +520,13 @@ bool {{ namespace }}AsmParser::classifySymbolRef(const MCExpr *Expr,
   MCValue Res;
   MCFixup Fixup;
   if (Expr->evaluateAsRelocatable(Res, nullptr, &Fixup))
-    return Res.getRefKind() == {{ namespace }}MCExpr::VK_{{ namespace }}_None;
+    return Res.getRefKind() == {{ Xpu }}MCExpr::VK_{{ Xpu }}_None;
   return false;
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ namespace }}AsmParser() {
-  RegisterMCAsmParser<{{ namespace }}AsmParser> Z(getThe{{ namespace }}32leTarget());
-  RegisterMCAsmParser<{{ namespace }}AsmParser> Y(getThe{{ namespace }}32beTarget());
-  RegisterMCAsmParser<{{ namespace }}AsmParser> X(getThe{{ namespace }}64leTarget());
-  RegisterMCAsmParser<{{ namespace }}AsmParser> W(getThe{{ namespace }}64beTarget());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitialize{{ Xpu }}AsmParser() {
+  RegisterMCAsmParser<{{ Xpu }}AsmParser> Z(getThe{{ Xpu }}32leTarget());
+  RegisterMCAsmParser<{{ Xpu }}AsmParser> Y(getThe{{ Xpu }}32beTarget());
+  RegisterMCAsmParser<{{ Xpu }}AsmParser> X(getThe{{ Xpu }}64leTarget());
+  RegisterMCAsmParser<{{ Xpu }}AsmParser> W(getThe{{ Xpu }}64beTarget());
 }

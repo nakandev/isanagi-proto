@@ -1,15 +1,15 @@
-//===- {{ namespace }}MCAsmInfo.cpp - {{ namespace }} Asm properties -===//
+//===- {{ Xpu }}MCAsmInfo.cpp - {{ Xpu }} Asm properties -===//
 
-#include "{{ namespace }}MCAsmInfo.h"
+#include "{{ Xpu }}MCAsmInfo.h"
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
-void {{ namespace }}MCAsmInfo::anchor() {}
+void {{ Xpu }}MCAsmInfo::anchor() {}
 
-{{ namespace }}MCAsmInfo::{{ namespace }}MCAsmInfo(const Triple &TT) {
+{{ Xpu }}MCAsmInfo::{{ Xpu }}MCAsmInfo(const Triple &TT) {
   CodePointerSize = CalleeSaveStackSlotSize = TT.isArch64Bit() ? 8 : 4;
   CommentString = "#";
   AlignmentIsInBytes = false;
