@@ -285,11 +285,13 @@ class LLVMCompiler():
 
     def gen_lld_elf_arch_xpu_cpp(self):
         fixups = self._fixups
+        fixups_pc_rel = [fx for fx in fixups if fx.name[:6] == "pc_rel"]
         fixup_relocs = fixups[:]
 
         fdirs = "lld/ELF/Arch".split("/")
         fname = "Xpu", ".cpp"
         kwargs = {
+            "fixups_pc_rel": fixups_pc_rel,
             "fixup_relocs": fixup_relocs,
         }
         self._read_template_and_write(fdirs, fname, kwargs)

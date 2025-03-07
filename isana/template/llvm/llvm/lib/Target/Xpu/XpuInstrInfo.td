@@ -137,10 +137,10 @@ def AddrReg      : ComplexPattern<iPTR, 2, "SelectAddrRegImm", [], []>;
 
 class LoadPattern<PatFrag LoadOp, {{ Xpu }}Inst Inst> :
   Pat<(LoadOp (AddrReg GPR:$rs1, Imm:$imm)),
-      (Inst (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
+      (Inst GPR:$rs1, Imm:$imm)>;
 class StorePattern<PatFrag StoreOp, {{ Xpu }}Inst Inst, RegisterClass RC> :
   Pat<(StoreOp RC:$rs2, (AddrReg GPR:$rs1, Imm:$imm)),
-      (Inst RC:$rs2, (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm))), 0)>;
+      (Inst RC:$rs2, GPR:$rs1, Imm:$imm)>;
 
 def : LoadPattern<sextloadi8 , LB>;
 def : LoadPattern< extloadi8 , LB>;

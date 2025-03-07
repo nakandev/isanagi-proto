@@ -22,7 +22,7 @@ public:
 
   MachineBasicBlock::iterator
   eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
-                                MachineBasicBlock::iterator MI) const override;
+                                MachineBasicBlock::iterator MBBI) const override;
 
 protected:
   const {{ Xpu }}Subtarget &STI;

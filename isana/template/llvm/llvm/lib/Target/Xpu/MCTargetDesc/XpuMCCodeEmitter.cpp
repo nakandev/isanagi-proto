@@ -149,7 +149,6 @@ unsigned
     case {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL:
           FixupKind = {{ Xpu }}::fixup_{{ xpu }}_pc_rel_1;  // TODO fix it
     case {{ Xpu }}MCExpr::VK_{{ Xpu }}_SYMBOL:
-      // FixupKind = {{ Xpu }}::fixup_{{ xpu }}_other_imm_0;  // TODO this is trial.
       {
         unsigned Opcode = MI.getOpcode();
         switch (Opcode) {

@@ -41,6 +41,8 @@ using namespace llvm;
   setOperationAction(ISD::SELECT   , XLenVT, Custom);
   setOperationAction(ISD::SELECT_CC, XLenVT, Expand);
 
+  setOperationAction(ISD::GlobalAddress, XLenVT, Custom);
+
   // Function alignments
   setMinFunctionAlignment(Align(4));
   setPrefFunctionAlignment(Align(4));
@@ -323,9 +325,88 @@ SDValue
   switch (Op.getOpcode()) {
   default:
     report_fatal_error("unimplemented operand");
+  case ISD::GlobalAddress:
+    return lowerGlobalAddress(Op, DAG);
   case ISD::SELECT:
     return lowerSELECT(Op, DAG);
   }
+}
+
+static SDValue getTargetNode(GlobalAddressSDNode *N, const SDLoc &DL, EVT Ty,
+                             SelectionDAG &DAG, unsigned Flags) {
+  return DAG.getTargetGlobalAddress(N->getGlobal(), DL, Ty, 0, Flags);
+}
+
+static SDValue getTargetNode(BlockAddressSDNode *N, const SDLoc &DL, EVT Ty,
+                             SelectionDAG &DAG, unsigned Flags) {
+  return DAG.getTargetBlockAddress(N->getBlockAddress(), Ty, N->getOffset(),
+                                   Flags);
+}
+
+static SDValue getTargetNode(ConstantPoolSDNode *N, const SDLoc &DL, EVT Ty,
+                             SelectionDAG &DAG, unsigned Flags) {
+  return DAG.getTargetConstantPool(N->getConstVal(), Ty, N->getAlign(),
+                                   N->getOffset(), Flags);
+}
+
+static SDValue getTargetNode(JumpTableSDNode *N, const SDLoc &DL, EVT Ty,
+                             SelectionDAG &DAG, unsigned Flags) {
+  return DAG.getTargetJumpTable(N->getIndex(), Ty, Flags);
+}
+
+template <class NodeTy>
+SDValue
+{{ Xpu }}TargetLowering::getAddr(
+  NodeTy *N,
+  SelectionDAG &DAG,
+  bool IsLocal,
+  bool IsExternWeak
+) const {
+  SDLoc DL(N);
+  EVT Ty = getPointerTy(DAG.getDataLayout());
+  // switch (getTargetMachine().getCodeModel()) {
+  //   default:
+  //     report_fatal_error("Unsupported code model for lowering");
+  //   case CodeModel::Small: {
+      SDValue AddrHi = getTargetNode(N, DL, Ty, DAG, {{ Xpu }}II::MO_SYMBOL);
+      SDValue AddrLo = getTargetNode(N, DL, Ty, DAG, {{ Xpu }}II::MO_SYMBOL);
+      SDValue MNHi = SDValue(DAG.getMachineNode({{ Xpu }}::LUI, DL, Ty, AddrHi), 0);
+      return SDValue(DAG.getMachineNode({{ Xpu }}::ADDI, DL, Ty, MNHi, AddrLo), 0);
+  //   }
+  //   case CodeModel::Medium: {
+  //     SDValue Addr = getTargetNode(N, DL, Ty, DAG, 0);
+  //     return SDValue(DAG.getMachineNode({{ Xpu }}::PseudoLLA, DL, Ty, Addr), 0);
+  //   }
+  // }
+}
+
+SDValue
+{{ Xpu }}TargetLowering::lowerGlobalAddress(
+  SDValue Op,
+  SelectionDAG &DAG
+) const {
+  GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
+  int64_t Offset = N->getOffset();
+  SDLoc DL(Op);
+  EVT Ty = Op.getValueType();
+  MVT VT = Op.getSimpleValueType();
+  MVT XLenVT = Subtarget.getXLenVT();
+
+  if (!isPositionIndependent()) {
+    const GlobalValue *GV = N->getGlobal();
+    SDValue Addr = getAddr(N, DAG, GV->isDSOLocal(), GV->hasExternalWeakLinkage());
+    if (Offset) {
+      return DAG.getNode(ISD::ADD, DL, Ty, Addr,
+                         DAG.getConstant(Offset, DL, XLenVT));
+    } else {
+      return Addr;
+    }
+  }
+
+  SDValue Addr = getTargetNode(N, DL, Ty, DAG, 0);
+  // return SDValue(DAG.getMachineNode({{ Xpu }}::PseudoLA, DL, Ty, Addr), 0);
+  return SDValue(DAG.getMachineNode({{ Xpu }}::ADDI, DL, Ty,
+                                    DAG.getRegister({{ Xpu }}::X0, VT), Addr), 0);
 }
 
 SDValue

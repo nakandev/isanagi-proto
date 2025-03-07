@@ -52,9 +52,12 @@ public:
                               MachineBasicBlock *BB) const override;
 
 private:
-  // Control Instruction Selection Features
-  // SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
+  template <class NodeTy>
+  SDValue getAddr(NodeTy *N, SelectionDAG &DAG, bool IsLocal = true,
+                  bool IsExternWeak = false) const;
 
+
+  SDValue lowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerSELECT(SDValue Op, SelectionDAG &DAG) const;
 };
 }

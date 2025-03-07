@@ -30,8 +30,9 @@ public:
 RelExpr {{ Xpu }}::getRelExpr(RelType type, const Symbol &s,
                            const uint8_t *loc) const {
   switch (type) {
-  // case R_CUSTOMXPU_PC_REL_0:
-  //   return R_PC;
+  {% for fx in fixups_pc_rel -%}
+  case R_{{ XPU }}_{{ fx.name.upper() }}:
+  {% endfor %}  return R_PC;
   default:
     return R_ABS;
   }

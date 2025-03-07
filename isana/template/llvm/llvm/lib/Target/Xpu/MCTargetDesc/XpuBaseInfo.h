@@ -22,7 +22,8 @@ namespace {{ Xpu }}II {
 // {{ Xpu }} Specific Machine Operand Flags
 enum {
   MO_None = 0,
-  MO_CALL = 1,
+  MO_CALL,
+  MO_SYMBOL,
 };
 } // namespace {{ Xpu }}II
 

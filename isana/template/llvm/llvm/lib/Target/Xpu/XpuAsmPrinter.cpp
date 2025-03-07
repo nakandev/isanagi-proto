@@ -89,9 +89,9 @@ static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
   case {{ Xpu }}II::MO_CALL:
     Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_CALL;
     break;
-  // case {{ Xpu }}II::MO_SYMBOL:
-  //   Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_SYMBOL;
-  //   break;
+  case {{ Xpu }}II::MO_SYMBOL:
+    Kind = {{ Xpu }}MCExpr::VK_{{ Xpu }}_SYMBOL;
+    break;
   }
 
   const MCExpr *ME =
