@@ -54,14 +54,26 @@ ArrayRef<Builtin::Info> {{ Xpu }}TargetInfo::getTargetBuiltins() const {
 
 ArrayRef<const char *> {{ Xpu }}TargetInfo::getGCCRegNames() const {
   static const char *const GCCRegNames[] = {
-      "x0",
+  {%- for reg in gpr.regs %}
+    "{{ reg.label }}",
+  {%- endfor %}
   };
   return llvm::ArrayRef(GCCRegNames);
 }
 
+int {{ Xpu }}TargetInfo::getEHDataRegisterNumber(unsigned RegNo) const {
+  {%- for reg in ret_regs %}
+  {% if not loop.first %}else {% endif %}if (RegNo == {{ loop.index - 1 }})
+    return {{ reg.number }};
+  {%- endfor %}
+  return -1;
+}
+
 ArrayRef<TargetInfo::GCCRegAlias> {{ Xpu }}TargetInfo::getGCCRegAliases() const {
   static const TargetInfo::GCCRegAlias GCCRegAliases[] = {
-      { {"zero"}, "x0"},
+  {%- for reg in gpr.regs %}
+      { { {%- for alias in reg.aliases %}"{{ alias }}",{%- endfor %} }, "{{ reg.label }}" },
+  {%- endfor %}
   };
   return llvm::ArrayRef(GCCRegAliases);
 }

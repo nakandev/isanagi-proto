@@ -308,7 +308,14 @@ class LLVMCompiler():
         self._read_template_and_write(fpath, kwargs)
 
     def gen_llvm_clang_lib_basic_targets_xpu_cpp(self):
+        gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
+        ret_regs = []
+        if gpr:
+            ret_regs = list(filter(lambda r: r.is_ret, gpr.regs))
+
         kwargs = {
+            "gpr": gpr,
+            "ret_regs": ret_regs,
         }
         fpath = "clang/lib/Basic/Targets/{Xpu}.cpp"
         self._read_template_and_write(fpath, kwargs)
