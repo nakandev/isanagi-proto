@@ -8,7 +8,7 @@ def test_compiler_generation():
     llvmcc = isa.compiler
     llvmcc.outdir = os.path.join(curdir, "out")
 
-    llvmcc.gen_llvm_lib_target()
+    llvmcc.gen_llvm_srcs()
 
 
 if __name__ == '__main__':
