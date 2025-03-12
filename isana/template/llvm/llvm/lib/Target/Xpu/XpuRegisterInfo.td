@@ -7,8 +7,11 @@ class {{ Xpu }}{{ base.name }}<bits<{{ base.bitsize }}> Enc, string n, list<stri
 }
 {% endfor %}
 
+let FallbackRegAltNameIndex = NoRegAltName in
+def ABIRegAltName : RegAltNameIndex;
+
 {% for reg in reg_defs -%}
-def {{ reg.varname }} : {{ Xpu }}{{ reg.basename }}<{{ reg.no }}, "{{ reg.name }}", {{ reg.aliases }}>, DwarfRegNum<[{{ reg.dwarfno }}]>;
+def {{ reg.varname }} : {{ Xpu }}{{ reg.basename }}<{{ reg.no }}, "{{ reg.name }}", {{ reg.aliases }}>, DwarfRegNum<[{{ reg.dwarfno }}]>{% if reg.has_aliases %}{ let RegAltNameIndices = [ABIRegAltName]; }{% else %};{% endif %}
 {% endfor %}
 
 //=== Register Classes

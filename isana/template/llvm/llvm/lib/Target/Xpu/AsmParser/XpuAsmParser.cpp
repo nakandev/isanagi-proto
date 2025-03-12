@@ -342,8 +342,12 @@ ParseStatus {{ Xpu }}AsmParser::parseRegister(OperandVector &Operands) {
     StringRef Name = getLexer().getTok().getIdentifier();
     unsigned RegNo = MatchRegisterName(Name);
 
-    if (RegNo == 0)
-      return ParseStatus::NoMatch;
+    if (RegNo == 0) {
+      RegNo = MatchRegisterAltName(Name);
+      if (RegNo == 0) {
+        return ParseStatus::NoMatch;
+      }
+    }
 
     getLexer().Lex();
     Operands.push_back({{ Xpu }}Operand::createReg(RegNo, S, E));

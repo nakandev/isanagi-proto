@@ -21,6 +21,8 @@ using namespace llvm;
 #define PRINT_ALIAS_INSTR
 #include "{{ Xpu }}GenAsmWriter.inc"
 
+static bool ArchRegNames;
+
 bool
 {{ Xpu }}InstPrinter::applyTargetSpecificCLOption(
   StringRef Opt
@@ -31,6 +33,7 @@ bool
     return true;
   }
   if (Opt == "numeric") {
+    ArchRegNames = true;
     return true;
   }
 
@@ -108,3 +111,9 @@ void
   MO.getExpr()->print(O, &MAI);
 }
 {% endfor %}
+
+const char *
+{{ Xpu }}InstPrinter::getRegisterName(MCRegister Reg) {
+  return getRegisterName(Reg, ArchRegNames ? {{ Xpu }}::NoRegAltName
+                                           : {{ Xpu }}::ABIRegAltName);
+}

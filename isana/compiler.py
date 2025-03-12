@@ -36,6 +36,7 @@ class RegisterDef(KwargsClass):
         'basename',
         'no',
         'name',
+        'has_aliases',
         'aliases',
         'dwarfno',
     )
@@ -472,6 +473,7 @@ class LLVMCompiler():
                     basename=reg.__class__.__name__,
                     no=reg.number,
                     name=reg.label,
+                    has_aliases=(len(reg.aliases) > 0),
                     aliases="[{}]".format(",".join('"{}"'.format(n) for n in reg.aliases)),
                     dwarfno=reg.dwarf_number,
                 ))

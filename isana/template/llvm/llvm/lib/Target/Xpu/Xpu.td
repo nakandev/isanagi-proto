@@ -19,6 +19,13 @@ include "{{ Xpu }}InstrInfo.td"
 def {{ Xpu }}InstrInfo : InstrInfo {
 }
 
+def {{ Xpu }}AsmParser : AsmParser {
+  let ShouldEmitMatchRegisterAltName = 1;
+  let AllowDuplicateRegisterNames = 1;
+}
+
 def {{ Xpu }} : Target {
   let InstructionSet = {{ Xpu }}InstrInfo;
+  let AssemblyParsers = [{{ Xpu }}AsmParser];
+  let AllowRegisterRenaming = 1;
 }
