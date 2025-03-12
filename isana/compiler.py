@@ -6,6 +6,7 @@ from isana.semantic import (
     may_change_pc_relative,
     may_take_memory_address,
     get_alu_dag,
+    estimate_load_immediate_dag,
 )
 from isana.isa import Immediate
 
@@ -734,12 +735,21 @@ class LLVMCompiler():
 
             instr_defs.append(instr_def)
 
+        # gen load immediate
+        xforms, dags = estimate_load_immediate_dag(self.isa)
+        li_pat_fmt = "def : Pat<({immtp}:$imm), ({opstr})>;"
+        li_pats = [li_pat_fmt.format(immtp=immtp, opstr=opstr) for immtp, opstr in dags]
+        gen_li_defs = "\n".join(xforms) + "\n\n" + "\n".join(li_pats)
+        li32_dag = dags[0][1]
+
         kwargs = {
             "asm_operand_clss": asm_operand_clss,
             "operand_clss": operand_clss,
             "operand_types": operand_types,
             "br_imm_operand_clss": br_imm_operand_clss,
             "instr_defs": instr_defs,
+            "gen_li_defs": gen_li_defs,
+            "li32_dag": li32_dag,
         }
         fpath = "llvm/lib/Target/{Xpu}/{Xpu}InstrInfo.td"
         self._read_template_and_write(fpath, kwargs)

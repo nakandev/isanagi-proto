@@ -78,21 +78,22 @@ def PseudoRET: {{ Xpu }}Inst<
 
 //== Generate Immediate Pattern
 // [TODO] auto generate from instruction semantics
-def LO12S: SDNodeXForm<imm, [{
-  return CurDAG->getTargetConstant(
-    SignExtend64<12>(N->getZExtValue()),
-    SDLoc(N),
-    N->getValueType(0)
-  );
-}]>;
-def HI20: SDNodeXForm<imm, [{
-  return getImm(N, ((N->getZExtValue()+0x800) >> 12) & 0xfffff);
-}]>;
+//def LO12S: SDNodeXForm<imm, [{
+//  return CurDAG->getTargetConstant(
+//    SignExtend64<12>(N->getZExtValue()),
+//    SDLoc(N),
+//    N->getValueType(0)
+//  );
+//}]>;
+//def HI20: SDNodeXForm<imm, [{
+//  return getImm(N, ((N->getZExtValue()+0x800) >> 12) & 0xfffff);
+//}]>;
+//
+//def : Pat<(ImmS12:$in), (ADDI X0, ImmS12:$in)>;
+//def : Pat<(ImmS20O12:$in), (LUI (HI20 imm:$in))>;
+//def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;
 
-def : Pat<(ImmS12:$in), (ADDI X0, ImmS12:$in)>;
-def : Pat<(ImmS20O12:$in), (LUI (HI20 imm:$in))>;
-def : Pat<(Imm:$in), (ADDI (LUI (HI20 imm:$in)), (LO12S imm:$in))>;
-
+{{ gen_li_defs }}
 
 //== Set-ConditionCode Pattern
 
@@ -131,7 +132,8 @@ def truncstorei32_a : AlignedStore<truncstorei32>;
 
 def FIAddr : ComplexPattern<iPTR, 2, "SelectAddrFrameIndexRegImm", [frameindex, add], []>;
 def : Pat<(FIAddr (iPTR GPR:$rs1), Imm:$imm),
-          (ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm)))>;
+          //(ADD GPR:$rs1, (ADDI (LUI (HI20 imm:$imm)), (LO12S imm:$imm)))>;
+          (ADD GPR:$rs1, ({{ li32_dag }}))>;
 
 def AddrReg      : ComplexPattern<iPTR, 2, "SelectAddrRegImm", [], []>;
 

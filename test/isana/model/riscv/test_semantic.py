@@ -1,5 +1,6 @@
 from isana.model.riscv.python.isa import isa
 from isana import semantic
+from pprint import pprint  # noqa
 
 
 class TestSemantic():
@@ -11,9 +12,13 @@ class TestSemantic():
 
 
 if __name__ == "__main__":
-    instr = next(filter(lambda x: x.opn == "add", isa.instructions), None)
-    ret = semantic.get_alu_dag(instr.semantic)
-    print(ret)
+    # instr = next(filter(lambda x: x.opn == "add", isa.instructions), None)
+    # ret = semantic.get_alu_dag(instr.semantic)
+    # print(ret)
 
-    ret = semantic.get_alu_dag(TestSemantic().semantic_1)
-    print(ret)
+    # ret = semantic.get_alu_dag(TestSemantic().semantic_1)
+    # print(ret)
+
+    instructions = isa.instructions
+    li_ops = semantic.estimate_load_immediate_dag(isa)
+    pprint(li_ops)
