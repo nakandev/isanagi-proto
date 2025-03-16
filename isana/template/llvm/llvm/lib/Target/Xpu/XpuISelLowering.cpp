@@ -210,21 +210,24 @@ SDValue
     MVT LocVT = VA.getLocVT();
     // ISD::ArgFlagsTy Flags = Outs[OutIdx].Flags;
 
-    switch (VA.getLocInfo()) {
-      default: llvm_unreachable("Unknown loc info!");
-            break;
-      case CCValAssign::Full:
-            break;
-      case CCValAssign::SExt:
-            Arg = DAG.getNode(ISD::SIGN_EXTEND, DL, LocVT, Arg);
-            break;
-      case CCValAssign::ZExt:
-            Arg = DAG.getNode(ISD::ZERO_EXTEND, DL, LocVT, Arg);
-            break;
-      case CCValAssign::AExt:
-            Arg = DAG.getNode(ISD::ANY_EXTEND, DL, LocVT, Arg);
-            break;
-    }
+    // if (VA.getLocInfo() == CCValAssign::Indirect) {
+    // } else {
+      switch (VA.getLocInfo()) {
+        default: llvm_unreachable("Unknown loc info!");
+              break;
+        case CCValAssign::Full:
+              break;
+        case CCValAssign::SExt:
+              Arg = DAG.getNode(ISD::SIGN_EXTEND, DL, LocVT, Arg);
+              break;
+        case CCValAssign::ZExt:
+              Arg = DAG.getNode(ISD::ZERO_EXTEND, DL, LocVT, Arg);
+              break;
+        case CCValAssign::AExt:
+              Arg = DAG.getNode(ISD::ANY_EXTEND, DL, LocVT, Arg);
+              break;
+      }
+    // }
 
     if (VA.isRegLoc()) {
       RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));

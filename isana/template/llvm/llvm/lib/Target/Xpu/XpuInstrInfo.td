@@ -260,3 +260,14 @@ def PseudoCALL : {{ Xpu }}Inst<(outs), (ins call_symbol:$func),
 }
 def : Pat<({{ xpu }}_call tglobaladdr:$func), (PseudoCALL tglobaladdr:$func)>;
 def : Pat<({{ xpu }}_call texternalsym:$func), (PseudoCALL texternalsym:$func)>;
+
+def PseudoCALLIndirect : {{ Xpu }}Inst<(outs), (ins GPR:$rs1),
+  "",
+  [({{ xpu }}_call GPR:$rs1)]>,
+  PseudoInstExpansion<(JALR X1, GPR:$rs1, 0)>
+{
+  let isPseudo = 1;
+  let isCodeGenOnly = 1;
+  let isCall = 1;
+  let Defs = [X1];
+}
