@@ -223,6 +223,7 @@ def auto_make_relocations(isa):
 def get_instr_pattern(instr):
     if ret := get_alu_dag(instr.semantic):
         (op, (dst_name, dst_tp), (l_name, l_tp, l_u), (r_name, r_tp, r_u)) = ret
+        # TODO: fix to add convert function to unsigned operand
         if r_tp == "UnknownImm":
             r_tp = instr.params.inputs[r_name].type_
         s = "[(set {}, ({} {}, {}))]".format(
