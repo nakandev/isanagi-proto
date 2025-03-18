@@ -35,6 +35,13 @@ using namespace llvm;
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
 
+  setOperationAction(ISD::BSWAP, XLenVT, Expand);  // TODO: Zbb | Zbkb => Legal
+  setOperationAction({ISD::CTTZ, ISD::CTLZ, ISD::CTPOP}, XLenVT, Expand);
+  setOperationAction({ISD::ROTL, ISD::ROTR}, XLenVT, Expand);  // TODO: Zbb | Zbkb => Legal
+                                                               //
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1, Expand);
+  setOperationAction(ISD::SIGN_EXTEND_INREG, {MVT::i8, MVT::i16}, Expand);  // TODO: zbb => delete this
+
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
   setOperationAction(ISD::BR_CC, XLenVT, Expand);
   // setOperationAction(ISD::BRCOND, MVT::Other, Custom);
