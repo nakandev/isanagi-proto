@@ -1,6 +1,7 @@
 //===-- {{ Xpu }}TargetMachine.cpp - Define TargetMachine for {{ Xpu }} --===//
 
 #include "{{ Xpu }}TargetMachine.h"
+#include "{{ Xpu }}MachineFunctionInfo.h"
 #include "TargetInfo/{{ Xpu }}TargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/Passes.h"
@@ -52,6 +53,14 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
   Subtarget(TT, CPU, FS, *this)
 {
   initAsmInfo();
+}
+
+MachineFunctionInfo *{{ Xpu }}TargetMachine::createMachineFunctionInfo(
+    BumpPtrAllocator &Allocator, const Function &F,
+    const TargetSubtargetInfo *STI) const {
+  return {{ Xpu }}MachineFunctionInfo::create<{{ Xpu }}MachineFunctionInfo>(
+      Allocator, F, STI
+  );
 }
 
 namespace {

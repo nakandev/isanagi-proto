@@ -2,6 +2,7 @@
 
 #include "{{ Xpu }}ISelLowering.h"
 #include "{{ Xpu }}.h"
+#include "{{ Xpu }}MachineFunctionInfo.h"
 #include "{{ Xpu }}Subtarget.h"
 #include "{{ Xpu }}TargetMachine.h"
 #include "MCTargetDesc/{{ Xpu }}BaseInfo.h"
@@ -35,6 +36,7 @@ using namespace llvm;
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
 
+  setOperationAction({ISD::SMUL_LOHI, ISD::UMUL_LOHI}, XLenVT, Expand);
   setOperationAction(ISD::BSWAP, XLenVT, Expand);  // TODO: Zbb | Zbkb => Legal
   setOperationAction({ISD::CTTZ, ISD::CTLZ, ISD::CTPOP}, XLenVT, Expand);
   setOperationAction({ISD::ROTL, ISD::ROTR}, XLenVT, Expand);  // TODO: Zbb | Zbkb => Legal
@@ -47,6 +49,11 @@ using namespace llvm;
   // setOperationAction(ISD::BRCOND, MVT::Other, Custom);
   setOperationAction(ISD::SELECT   , XLenVT, Custom);
   setOperationAction(ISD::SELECT_CC, XLenVT, Expand);
+
+  setOperationAction(ISD::VASTART,   MVT::Other, Custom);
+  setOperationAction(ISD::VAARG,     MVT::Other, Expand);
+  setOperationAction(ISD::VACOPY,    MVT::Other, Expand);
+  setOperationAction(ISD::VAEND,     MVT::Other, Expand);
 
   setOperationAction(ISD::GlobalAddress, XLenVT, Custom);
 
@@ -132,6 +139,51 @@ SDValue
 
       InVals.push_back(ArgValue);
     }
+  }
+
+  if (IsVarArg) {
+    static const MCPhysReg ArgIGPRs[] = {  // TODO: move to {{ Xpu }}CallingConv.cpp
+      {{ arg_regs }}
+    };
+    ArrayRef<MCPhysReg> ArgRegs = ArrayRef(ArgIGPRs);
+    unsigned Idx = CCInfo.getFirstUnallocated(ArgRegs);
+    unsigned XLenInBytes = Subtarget.getXLen() / 8;
+    MVT RegTy = MVT::getIntegerVT(XLenInBytes * 8);
+    const TargetRegisterClass *RC = getRegClassFor(RegTy);
+    MachineRegisterInfo &RegInfo = MF.getRegInfo();
+    {{ xpu }}MachineFunctionInfo *MFnInfo = MF.getInfo<{{ xpu }}MachineFunctionInfo>();
+
+    int VarArgsSaveSize = XLenInBytes * (ArgRegs.size() - Idx);
+    int FI;
+
+    if (ArgRegs.size() == Idx) {
+      int VaArgOffset = CCInfo.getStackSize();
+      FI = MFI.CreateFixedObject(XLenInBytes, VaArgOffset, true);
+    } else {
+      int VaArgOffset = -VarArgsSaveSize;
+      FI = MFI.CreateFixedObject(VarArgsSaveSize, VaArgOffset, true);
+      if (Idx % 2) {
+        MFI.CreateFixedObject(
+            XLenInBytes, VaArgOffset - static_cast<int>(XLenInBytes), true);
+        VarArgsSaveSize += XLenInBytes;
+      }
+
+      SDValue FIN = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+
+      for (unsigned I = Idx; I < ArgRegs.size(); ++I) {
+        LLVM_DEBUG(dbgs() << "writeVarArgRegs I = " << I << '\n');
+        const Register Reg = RegInfo.createVirtualRegister(RC);
+        RegInfo.addLiveIn(ArgRegs[I], Reg);
+        SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, Reg, RegTy);
+        SDValue Store =
+            DAG.getStore(Chain, DL, ArgValue, FIN, MachinePointerInfo());
+        OutChains.push_back(Store);
+        FIN = DAG.getMemBasePlusOffset(FIN, TypeSize::getFixed(XLenInBytes), DL);
+      }
+    }
+
+    MFnInfo->setVarArgsFrameIndex(FI);
+    // MFnInfo->setVarArgsSaveSize(VarArgsSaveSize);
   }
 
   return Chain;
@@ -339,6 +391,8 @@ SDValue
     return lowerGlobalAddress(Op, DAG);
   case ISD::SELECT:
     return lowerSELECT(Op, DAG);
+  case ISD::VASTART:
+    return lowerVASTART(Op, DAG);
   }
 }
 
@@ -439,6 +493,25 @@ SDValue
   SDValue Ops[] = {CondV, Zero, SetNE, TrueV, FalseV};
 
   return DAG.getNode({{ Xpu }}ISD::SELECT_CC, DL, VT, Ops);
+}
+
+SDValue
+{{ Xpu }}TargetLowering::lowerVASTART(
+  SDValue Op,
+  SelectionDAG &DAG
+) const {
+  MachineFunction &MF = DAG.getMachineFunction();
+  {{ Xpu }}MachineFunctionInfo *FuncInfo = MF.getInfo<{{ Xpu }}MachineFunctionInfo>();
+
+  SDLoc DL = SDLoc(Op);
+  SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(),
+                                 getPointerTy(MF.getDataLayout()));
+
+  // vastart just stores the address of the VarArgsFrameIndex slot into the
+  // memory location argument.
+  const Value *SV = cast<SrcValueSDNode>(Op.getOperand(2))->getValue();
+  return DAG.getStore(Op.getOperand(0), DL, FI, Op.getOperand(1),
+                      MachinePointerInfo(SV));
 }
 
 const char *

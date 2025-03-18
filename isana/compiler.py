@@ -384,6 +384,8 @@ class LLVMCompiler():
         self.gen_iseldagtodag_h()
         self.gen_isellowering_cpp()
         self.gen_isellowering_h()
+        self.gen_machinefunctioninfo_cpp()
+        self.gen_machinefunctioninfo_h()
         self.gen_registerinfo_td()
         self.gen_registerinfo_cpp()
         self.gen_registerinfo_h()
@@ -790,7 +792,13 @@ class LLVMCompiler():
         self._read_template_and_write(fpath, kwargs)
 
     def gen_isellowering_cpp(self):
+        arg_regs = []
+        gpr = next(filter(lambda rg: rg.label == "GPR", self.isa.registers), None)
+        if gpr:
+            regs = list(filter(lambda r: r.is_arg, gpr.regs))
+            arg_regs = ', '.join(["{}::{}".format(self.namespace, r.label.upper()) for r in regs])
         kwargs = {
+            "arg_regs": arg_regs,
         }
         fpath = "llvm/lib/Target/{Xpu}/{Xpu}ISelLowering.cpp"
         self._read_template_and_write(fpath, kwargs)
@@ -811,6 +819,18 @@ class LLVMCompiler():
         kwargs = {
         }
         fpath = "llvm/lib/Target/{Xpu}/{Xpu}ISelDAGToDAG.h"
+        self._read_template_and_write(fpath, kwargs)
+
+    def gen_machinefunctioninfo_cpp(self):
+        kwargs = {
+        }
+        fpath = "llvm/lib/Target/{Xpu}/{Xpu}MachineFunctionInfo.cpp"
+        self._read_template_and_write(fpath, kwargs)
+
+    def gen_machinefunctioninfo_h(self):
+        kwargs = {
+        }
+        fpath = "llvm/lib/Target/{Xpu}/{Xpu}MachineFunctionInfo.h"
         self._read_template_and_write(fpath, kwargs)
 
     def gen_schedule_td(self):

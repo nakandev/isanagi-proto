@@ -39,7 +39,7 @@ add_llvm_target({{ Xpu }}CodeGen
   {{ Xpu }}ISelDAGToDAG.cpp
   {{ Xpu }}ISelLowering.cpp
   # {{ Xpu }}LandingPadSetup.cpp
-  # {{ Xpu }}MachineFunctionInfo.cpp
+  {{ Xpu }}MachineFunctionInfo.cpp
   # {{ Xpu }}MergeBaseOffset.cpp
   # {{ Xpu }}OptWInstrs.cpp
   # {{ Xpu }}PostRAExpandPseudoInsts.cpp
