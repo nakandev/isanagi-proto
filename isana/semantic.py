@@ -155,7 +155,7 @@ def _match_ast_line(src_ites, dst_ites):
 
 def may_change_pc_absolute(semantic):
     def pcabs_semantic(self, ctx, ins):
-        ctx.PCR.pc = Pick
+        ctx.PCR.pc = PickAny
     def pcabs_ng1_semantic(self, ctx, ins):
         ctx.PCR.pc + Any
     def pcabs_ng2_semantic(self, ctx, ins):
